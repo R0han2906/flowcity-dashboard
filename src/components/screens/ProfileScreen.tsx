@@ -24,7 +24,7 @@ const ProfileScreen = () => {
       {/* Header */}
       <motion.div variants={fadeUp} className="flex items-center gap-6">
         <div className="w-[72px] h-[72px] bg-fc-accent border-[3px] border-fc-accent flex items-center justify-center flex-shrink-0" style={{ borderRadius: 0 }}>
-          <span className="font-display text-[28px] font-extrabold text-bg-base">RA</span>
+          <span className="font-display text-[28px] font-extrabold text-white">RA</span>
         </div>
         <div>
           <h2 className="font-display text-[22px] font-bold text-text-primary">ROHAN ACHARYA</h2>
@@ -99,7 +99,7 @@ const ProfileScreen = () => {
           {['ENGLISH', 'हिंदी', 'मराठी'].map((l) => (
             <button key={l} onClick={() => setLang(l)}
               className={`flex-1 py-3 font-mono-label text-xs uppercase border-2 transition-all ${
-                lang === l ? 'bg-fc-accent text-bg-base border-fc-accent' : 'bg-bg-inset text-text-muted-fc border-border-hard'
+                lang === l ? 'bg-fc-accent text-white border-fc-accent' : 'bg-bg-inset text-text-muted-fc border-border-hard'
               }`}
               style={{ borderRadius: 2 }}>
               {l}

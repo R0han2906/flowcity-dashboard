@@ -53,7 +53,7 @@ const DisruptionsScreen = () => {
 
           {/* Original Route */}
           <motion.div variants={fadeUp} className="bg-bg-elevated/50 border-2 border-dashed border-border-hard p-6" style={{ borderRadius: 4 }}>
-            <span className="brutal-chip bg-fc-danger text-bg-base mb-3 inline-block">❌ AFFECTED</span>
+            <span className="brutal-chip bg-fc-danger text-white mb-3 inline-block">❌ AFFECTED</span>
             <p className="font-display text-sm text-text-muted-fc line-through">ANDHERI → GHATKOPAR → BKC VIA METRO</p>
             <p className="font-mono-label text-xs text-text-muted-fc line-through mt-1">WAS 22 MIN · ₹30</p>
             <div className="mt-3 opacity-40">
@@ -73,7 +73,7 @@ const DisruptionsScreen = () => {
             className="bg-bg-elevated border-[3px] border-fc-accent p-6"
             style={{ boxShadow: '6px 6px 0px hsla(var(--accent), 0.15)', borderRadius: 4 }}
           >
-            <span className="brutal-chip bg-fc-accent text-bg-base mb-3 inline-block">✨ SUGGESTED</span>
+            <span className="brutal-chip bg-fc-accent text-white mb-3 inline-block">✨ SUGGESTED</span>
             <p className="font-display text-lg font-bold text-text-primary">ANDHERI → BKC VIA BUS #340 + WALK</p>
             <div className="mt-3">
               <SegmentBar segments={[
@@ -89,7 +89,7 @@ const DisruptionsScreen = () => {
               <span className="font-mono-label text-xs text-text-secondary">+9 MIN LONGER — BUT AVOIDS 18 MIN DISRUPTION WAIT</span>
             </div>
 
-            <button className="w-full mt-4 py-3 bg-fc-accent text-bg-base font-display text-sm font-bold uppercase brutal-btn-primary">
+            <button className="w-full mt-4 py-3 bg-fc-accent text-white font-display text-sm font-bold uppercase brutal-btn-primary">
               ✓ ACCEPT NEW ROUTE
             </button>
           </motion.div>
@@ -118,7 +118,7 @@ const DisruptionsScreen = () => {
         <motion.div variants={fadeUp} className="mt-8 lg:mt-0 brutal-card p-6 space-y-4 h-fit">
           <div className="flex items-center gap-2">
             <h3 className="font-display text-base font-bold uppercase text-text-primary">🎛 DISRUPTION SIMULATOR</h3>
-            <span className="brutal-chip bg-fc-warning text-bg-base text-[9px]">DEMO MODE</span>
+            <span className="brutal-chip bg-fc-warning text-white text-[9px]">DEMO MODE</span>
           </div>
           <p className="font-mono-label text-[11px] text-text-muted-fc">Inject disruptions. Watch the app adapt.</p>
 
@@ -148,7 +148,7 @@ const DisruptionsScreen = () => {
                 <button key={s} onClick={() => setSeverity(s)}
                   className={`flex-1 py-2 font-mono-label text-[10px] uppercase border-2 ${
                     severity === s
-                      ? s === 'minor' ? 'bg-fc-warning text-bg-base border-fc-warning' : 'bg-fc-danger text-text-primary border-fc-danger'
+                      ? s === 'minor' ? 'bg-fc-warning text-white border-fc-warning' : 'bg-fc-danger text-text-primary border-fc-danger'
                       : 'bg-bg-inset text-text-muted-fc border-border-hard'
                   }`} style={{ borderRadius: 0 }}>
                   {s}

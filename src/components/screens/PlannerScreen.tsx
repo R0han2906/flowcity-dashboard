@@ -19,8 +19,8 @@ const PlannerScreen = () => {
   const highColor = highest === 'SPEED' ? 'text-fc-accent' : highest === 'COST' ? 'text-fc-success' : 'text-fc-warning';
 
   const badgeStyles: Record<string, string> = {
-    accent: 'bg-fc-accent text-bg-base',
-    success: 'bg-fc-success text-bg-base',
+    accent: 'bg-fc-accent text-white',
+    success: 'bg-fc-success text-white',
     muted: 'bg-bg-inset text-text-secondary border-2 border-border-hard',
   };
   const crowdColors: Record<string, string> = { HIGH: 'text-fc-warning', MODERATE: 'text-fc-warning', LOW: 'text-fc-success' };
@@ -68,7 +68,7 @@ const PlannerScreen = () => {
                   onClick={() => setTimeMode(m)}
                   className={`flex-1 py-3 font-mono-label text-xs uppercase border-2 transition-all ${
                     timeMode === m
-                      ? 'bg-fc-accent text-bg-base border-fc-accent'
+                      ? 'bg-fc-accent text-white border-fc-accent'
                       : 'bg-bg-inset text-text-muted-fc border-border-hard'
                   }`}
                   style={{ borderRadius: 2 }}
