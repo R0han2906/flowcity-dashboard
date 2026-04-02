@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --bg-base: 0 0% 4%;
-    --bg-elevated: 0 0% 8%;
-    --bg-inset: 0 0% 10%;
-    --border-hard: 0 0% 16%;
-    --border-accent: 217 91% 60%;
-    --accent: 217 91% 60%;
-    --accent-bright: 217 92% 68%;
-    --metro: 217 91% 60%;
-    --bus: 48 96% 53%;
-    --walk: 240 5% 65%;
-    --auto: 142 71% 45%;
-    --ferry: 271 81% 56%;
-    --cycle: 189 94% 43%;
-    --success: 142 71% 45%;
-    --warning: 48 96% 53%;
-    --danger: 0 84% 60%;
-    --text-primary: 0 0% 98%;
-    --text-secondary: 240 5% 65%;
-    --text-muted: 240 4% 36%;
-    --shadow-color: 0 0% 12%;
+    --bg-base: 0 0% 96%;
+    --bg-elevated: 0 0% 100%;
+    --bg-inset: 0 0% 93%;
+    --border-hard: 0 0% 0%;
+    --border-accent: 217 91% 50%;
+    --accent: 217 91% 50%;
+    --accent-bright: 217 92% 60%;
+    --metro: 217 91% 50%;
+    --bus: 48 96% 45%;
+    --walk: 0 0% 45%;
+    --auto: 142 71% 38%;
+    --ferry: 271 81% 50%;
+    --cycle: 189 94% 38%;
+    --success: 142 71% 38%;
+    --warning: 40 96% 45%;
+    --danger: 0 84% 50%;
+    --text-primary: 0 0% 5%;
+    --text-secondary: 0 0% 35%;
+    --text-muted: 0 0% 55%;
+    --shadow-color: 0 0% 0%;
 
     --background: var(--bg-base);
     --foreground: var(--text-primary);
@@ -32,15 +32,15 @@
     --popover: var(--bg-elevated);
     --popover-foreground: var(--text-primary);
     --primary: var(--accent);
-    --primary-foreground: 0 0% 4%;
+    --primary-foreground: 0 0% 100%;
     --secondary: var(--bg-inset);
     --secondary-foreground: var(--text-primary);
     --muted: var(--bg-inset);
     --muted-foreground: var(--text-secondary);
     --accent-color: var(--accent);
-    --accent-foreground: 0 0% 4%;
+    --accent-foreground: 0 0% 100%;
     --destructive: var(--danger);
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
     --border: var(--border-hard);
     --input: var(--border-hard);
     --ring: var(--accent);
@@ -60,7 +60,6 @@
   }
 }
 
-/* Typography utilities */
 .font-display {
   font-family: 'Space Grotesk', sans-serif;
 }
@@ -73,7 +72,7 @@
   font-family: 'Inter', sans-serif;
 }
 
-/* Brutalist card system */
+/* Brutalist card system — white edition */
 .brutal-card {
   background: hsl(var(--bg-elevated));
   border: 2px solid hsl(var(--border-hard));
@@ -93,7 +92,6 @@
   box-shadow: 6px 6px 0px hsl(var(--shadow-color));
 }
 
-/* Brutalist button */
 .brutal-btn {
   border: 2px solid hsl(var(--border-hard));
   box-shadow: 3px 3px 0px hsl(var(--shadow-color));
@@ -108,8 +106,8 @@
 
 .brutal-btn-primary {
   background: hsl(var(--accent));
-  color: hsl(var(--bg-base));
-  border: 2px solid hsl(var(--accent));
+  color: hsl(0 0% 100%);
+  border: 2px solid hsl(var(--border-hard));
   box-shadow: 3px 3px 0px hsl(var(--shadow-color));
   border-radius: 2px;
   transition: all 0.1s ease;
@@ -122,8 +120,8 @@
 
 .brutal-btn-danger {
   background: hsl(var(--danger));
-  color: hsl(var(--text-primary));
-  border: 2px solid hsl(var(--danger));
+  color: hsl(0 0% 100%);
+  border: 2px solid hsl(var(--border-hard));
   box-shadow: 3px 3px 0px hsl(var(--shadow-color));
   border-radius: 2px;
   transition: all 0.1s ease;
@@ -134,9 +132,8 @@
   box-shadow: 1px 1px 0px hsl(var(--shadow-color));
 }
 
-/* Brutalist input */
 .brutal-input {
-  background: hsl(var(--bg-inset));
+  background: hsl(var(--bg-elevated));
   border: 2px solid hsl(var(--border-hard));
   border-radius: 2px;
   color: hsl(var(--text-primary));
@@ -153,7 +150,6 @@
   color: hsl(var(--text-muted));
 }
 
-/* Brutalist chip/badge */
 .brutal-chip {
   border: 2px solid hsl(var(--border-hard));
   border-radius: 2px;
@@ -165,13 +161,11 @@
   padding: 4px 8px;
 }
 
-/* Focus visible */
 *:focus-visible {
   outline: 2px solid hsl(var(--accent));
   outline-offset: 2px;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -184,7 +178,6 @@
   border-radius: 0;
 }
 
-/* Hide scrollbar for carousels */
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -193,7 +186,6 @@
   display: none;
 }
 
-/* Pulse animation for live indicators */
 @keyframes brutal-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
@@ -202,7 +194,6 @@
   animation: brutal-pulse 2s ease infinite;
 }
 
-/* Route dash animation */
 @keyframes dash-move {
   to { stroke-dashoffset: -100; }
 }
