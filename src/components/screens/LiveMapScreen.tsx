@@ -48,7 +48,7 @@ const LiveMapScreen = () => {
   const pathD = routePath.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x}% ${p.y}%`).join(' ');
 
   return (
-    <div className="relative w-full h-[calc(100vh-80px)] lg:h-screen bg-bg-base overflow-hidden">
+    <div className="relative w-full h-[calc(100vh-80px)] lg:h-screen overflow-hidden" style={{ background: '#0A0A0A' }}>
       {/* Map SVG */}
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
         {/* Water */}
