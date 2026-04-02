@@ -25,7 +25,7 @@ const DashboardScreen = ({ onNavigate }: Props) => {
           <div className="brutal-chip bg-bg-inset">31°C · HUMID</div>
           <button className="relative p-2">
             <Bell size={20} strokeWidth={2.5} className="text-text-secondary" />
-            <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-fc-danger text-bg-base font-mono-label text-[10px] flex items-center justify-center" style={{ borderRadius: 0 }}>3</span>
+            <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-fc-danger text-white font-mono-label text-[10px] flex items-center justify-center" style={{ borderRadius: 0 }}>3</span>
           </button>
         </div>
       </motion.div>
@@ -40,7 +40,7 @@ const DashboardScreen = ({ onNavigate }: Props) => {
       {/* Active Journey Hero Card */}
       <motion.div variants={fadeUp} className="brutal-card-hero p-6 cursor-pointer" onClick={() => onNavigate('map')}>
         <div className="flex items-center justify-between mb-4">
-          <span className="brutal-chip bg-fc-danger text-bg-base border-fc-danger animate-brutal-pulse" style={{ boxShadow: '2px 2px 0px hsl(var(--shadow-color))' }}>LIVE</span>
+          <span className="brutal-chip bg-fc-danger text-white border-fc-danger animate-brutal-pulse" style={{ boxShadow: '2px 2px 0px hsl(var(--shadow-color))' }}>LIVE</span>
           <span className="font-mono-label text-xs text-text-muted-fc">TAP TO VIEW MAP →</span>
         </div>
         <h3 className="font-display text-[22px] font-bold text-text-primary mb-4">ANDHERI → BKC</h3>

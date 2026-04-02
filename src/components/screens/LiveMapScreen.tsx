@@ -119,7 +119,7 @@ const LiveMapScreen = () => {
             key={layer}
             onClick={() => setActiveLayer(layer)}
             className={`px-4 py-2 font-mono-label text-[11px] uppercase border-r-2 border-border-hard last:border-r-0 transition-all ${
-              activeLayer === layer ? 'bg-fc-accent text-bg-base' : 'bg-bg-inset text-text-muted-fc'
+              activeLayer === layer ? 'bg-fc-accent text-white' : 'bg-bg-inset text-text-muted-fc'
             }`}
           >
             {layer === 'traffic' ? '🔥 TRAFFIC' : layer === 'crowd' ? '👥 CROWD' : '⚠️ DISRUPTION'}
