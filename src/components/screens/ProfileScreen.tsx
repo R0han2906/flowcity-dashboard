@@ -5,6 +5,7 @@ import {
   Users, Bell, MapPin, Shield, Clock, Pencil, Globe,
   ChevronRight, Flame, Leaf, Zap, Award, Heart
 } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 const fadeUp = {
@@ -49,9 +50,15 @@ const modeColors: Record<string, { bg: string; border: string; text: string; dot
 };
 
 const ProfileScreen = () => {
-  const [toggles, setToggles] = useState<Record<string, boolean>>(
-    Object.fromEntries(prefConfig.map((p) => [p.key, p.default]))
-  );
+  const { user } = useAuth();
+  
+  const [toggles, setToggles] = useState<Record<string, boolean>>(() => {
+    const prefs = Object.fromEntries(prefConfig.map((p) => [p.key, p.default]));
+    if (user?.transportPrefs) {
+      prefs.metro = user.transportPrefs.includes('metro');
+    }
+    return prefs;
+  });
   const [lang, setLang] = useState('english');
 
   const trips = useCounter(87, 1.8);
@@ -87,15 +94,17 @@ const ProfileScreen = () => {
             <div className="relative z-10 flex items-center gap-5">
               {/* Avatar */}
               <div className="w-[72px] h-[72px] rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[28px] font-bold text-white tracking-tight">RA</span>
+                <span className="text-[28px] font-bold text-white tracking-tight">
+                  {user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'RA'}
+                </span>
               </div>
 
               <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-bold text-white tracking-tight">Rohan Acharya</h2>
-                <p className="text-sm text-white/60 font-medium mt-0.5">Mumbai, Maharashtra</p>
+                <h2 className="text-xl font-bold text-white tracking-tight">{user?.name || 'Rohan Acharya'}</h2>
+                <p className="text-sm text-white/60 font-medium mt-0.5">{user?.city || 'Mumbai, Maharashtra'}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="bg-white/10 border border-white/15 px-2.5 py-0.5 rounded-lg text-[10px] font-bold text-white/70 tracking-wider uppercase">
-                    Member since Jan 2026
+                    Member since {user?.joinDate || 'Jan 2026'}
                   </span>
                 </div>
               </div>
