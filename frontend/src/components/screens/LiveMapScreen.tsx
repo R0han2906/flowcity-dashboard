@@ -8,20 +8,26 @@ import {
   IndianRupee,
   Users,
   Clock,
-  ChevronRight,
   Shield,
-  Search,
-  Navigation,
+  Sparkles,
+  AlertCircle,
+  Loader2,
+  TrendingDown,
+  Wallet,
+  Gauge,
+  AlertTriangle,
+  CheckCircle2,
+  BarChart3,
   Train,
   Bus,
   Car,
   Footprints,
-  Sparkles,
-  AlertCircle,
-  Loader2,
+  Plus,
+  X,
+  Navigation,
 } from 'lucide-react';
-import { planRoute, type BackendRoute, type BackendRouteStep } from '@/lib/api';
-import MapComponent, { type LatLng, type MapRoute } from '@/components/MapComponent';
+import { planRoute, type BackendRoute, type RouteResource, type AIRecommendation } from '@/lib/api';
+import MapComponent, { type LatLng, type MapRoute, normalizeCoordinates } from '@/components/MapComponent';
 import { LIVE_LOCATION_KEY } from '@/components/ui/LiveLocationCard';
 
 type StoredLiveLocation = {
@@ -37,24 +43,16 @@ function readLiveLocationFromSession(): StoredLiveLocation | null {
   try {
     const raw = sessionStorage.getItem(LIVE_LOCATION_KEY);
     if (!raw) return null;
-
     const parsed = JSON.parse(raw) as StoredLiveLocation;
-    if (
-      typeof parsed?.lat !== 'number' ||
-      typeof parsed?.lng !== 'number' ||
-      Number.isNaN(parsed.lat) ||
-      Number.isNaN(parsed.lng)
-    ) {
+    if (typeof parsed?.lat !== 'number' || typeof parsed?.lng !== 'number' || Number.isNaN(parsed.lat) || Number.isNaN(parsed.lng)) {
       return null;
     }
-
     return parsed;
   } catch {
     return null;
   }
 }
 
-// Nominatim geocoding
 async function geocodeLocation(query: string): Promise<LatLng> {
   const q = encodeURIComponent(`${query}, Mumbai, India`);
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`;
@@ -64,44 +62,22 @@ async function geocodeLocation(query: string): Promise<LatLng> {
   return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
 }
 
-// Simulate 3 route polylines around two coords
-function buildRoutes(o: LatLng, d: LatLng): MapRoute[] {
-  const mid = { lat: (o.lat + d.lat) / 2, lng: (o.lng + d.lng) / 2 };
-  const latD = d.lat - o.lat;
-  const lngD = d.lng - o.lng;
+const routeColors: Record<string, string> = {
+  fastest: '#22c55e',
+  cheapest: '#3b82f6',
+  comfort: '#f97316',
+};
 
-  return [
-    {
-      type: 'fastest',
-      color: '#22c55e',
-      positions: [
-        [o.lat, o.lng],
-        [mid.lat + latD * 0.12, mid.lng - lngD * 0.08],
-        [d.lat, d.lng],
-      ],
-    },
-    {
-      type: 'cheapest',
-      color: '#3b82f6',
-      positions: [
-        [o.lat, o.lng],
-        [mid.lat - latD * 0.1, mid.lng + lngD * 0.12],
-        [mid.lat - latD * 0.05, mid.lng - lngD * 0.05],
-        [d.lat, d.lng],
-      ],
-    },
-    {
-      type: 'comfort',
-      color: '#f97316',
-      positions: [
-        [o.lat, o.lng],
-        [o.lat + latD * 0.3, o.lng + lngD * 0.1],
-        [mid.lat + latD * 0.08, mid.lng + lngD * 0.15],
-        [d.lat - latD * 0.1, d.lng - lngD * 0.05],
-        [d.lat, d.lng],
-      ],
-    },
-  ];
+function buildRoutesFromBackend(routes: BackendRoute[], recommendedId?: string): MapRoute[] {
+  if (!routes || !Array.isArray(routes)) return [];
+  return routes
+    .filter((r) => r && r.geometry && Array.isArray(r.geometry) && r.geometry.length > 0)
+    .map((r) => ({
+      id: r.id,
+      type: r.type,
+      color: routeColors[r.type] || '#888',
+      positions: normalizeCoordinates(r.geometry),
+    }));
 }
 
 const stagger: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
@@ -110,183 +86,183 @@ const fadeUp: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
 };
 
-// Mode styling config
-const modeConfig: Record<string, { icon: any; color: string; bg: string; border: string; dot: string }> = {
-  metro: { icon: Train, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', dot: 'bg-blue-500' },
-  bus: { icon: Bus, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', dot: 'bg-amber-500' },
-  auto: { icon: Car, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-  cab: { icon: Car, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', dot: 'bg-purple-500' },
-  walk: { icon: Footprints, color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200', dot: 'bg-gray-400' },
-  train: { icon: Train, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200', dot: 'bg-indigo-500' },
+const routeTypeConfig: Record<string, { bg: string; text: string; label: string; icon: any; color: string }> = {
+  fastest: { bg: 'bg-[#1b3a2a]', text: 'text-white', label: 'Fastest', icon: Zap, color: '#22c55e' },
+  cheapest: { bg: 'bg-blue-600', text: 'text-white', label: 'Cheapest', icon: IndianRupee, color: '#3b82f6' },
+  comfort: { bg: 'bg-orange-500', text: 'text-white', label: 'Comfort', icon: Users, color: '#f97316' },
 };
 
-const getModeConfig = (mode: string) => modeConfig[mode] || modeConfig.walk;
-
-// Route type badge config
-const routeTypeBadge: Record<string, { bg: string; text: string; label: string; icon: any }> = {
-  fastest: { bg: 'bg-[#1b3a2a]', text: 'text-white', label: '⚡ Fastest', icon: Zap },
-  cheapest: { bg: 'bg-emerald-600', text: 'text-white', label: '₹ Cheapest', icon: IndianRupee },
-  comfort: { bg: 'bg-gray-100', text: 'text-gray-600', label: '😌 Comfort', icon: Users },
+const trafficConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  low: { label: 'Low', color: 'text-emerald-600', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
+  medium: { label: 'Moderate', color: 'text-amber-600', bg: 'bg-amber-50', dot: 'bg-amber-500' },
+  high: { label: 'Heavy', color: 'text-red-600', bg: 'bg-red-50', dot: 'bg-red-500' },
 };
 
-// Route card
-function RouteCard({ route }: { route: BackendRoute; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const badge = routeTypeBadge[route.type] || routeTypeBadge.comfort;
-  const BadgeIcon = badge.icon;
+const resourceConfig: Record<string, { icon: any; color: string; bg: string; border: string }> = {
+  walk: { icon: Footprints, color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200' },
+  metro: { icon: Train, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+  bus: { icon: Bus, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+  train: { icon: Train, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  cab: { icon: Car, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
+  auto: { icon: Car, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+};
+
+function ResourceFlow({ resources, compact }: { resources: RouteResource[]; compact?: boolean }) {
+  if (!resources || resources.length === 0) return <span className="text-[10px] text-gray-400">—</span>;
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {resources.map((res, i) => {
+        const cfg = resourceConfig[res.type] || resourceConfig.walk;
+        const Icon = cfg.icon;
+        return (
+          <div key={i} className="flex items-center gap-1">
+            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg ${cfg.bg} border ${cfg.border}`}>
+              <Icon size={compact ? 9 : 11} className={cfg.color} strokeWidth={2.5} />
+              <span className={`text-[10px] font-bold ${cfg.color}`}>{res.duration}m</span>
+            </div>
+            {i < resources.length - 1 && (
+              <span className="text-gray-300 text-[9px] font-bold">→</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RouteCard({
+  route,
+  isSelected,
+  onSelect,
+}: {
+  route: BackendRoute;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const cfg = routeTypeConfig[route.type] || routeTypeConfig.comfort;
+  const traffic = trafficConfig[route.trafficLevel] || trafficConfig.medium;
+  const BadgeIcon = cfg.icon;
 
   return (
-    <motion.div variants={fadeUp} className="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-5">
-          <div className={`${badge.bg} ${badge.text} px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5`}>
-            <BadgeIcon size={12} strokeWidth={3} />
-            {badge.label}
-          </div>
-          <div className="text-right">
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-gray-900 tracking-tight tabular-nums">
-                {route.totalTime}
-              </span>
-              <span className="text-sm font-semibold text-gray-400">min</span>
-            </div>
-            <span className="text-sm font-bold text-gray-500">₹{route.estimatedCost}</span>
-          </div>
+    <motion.div
+      variants={fadeUp}
+      onClick={onSelect}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      className={`rounded-2xl p-5 border-2 cursor-pointer transition-all duration-200 ${
+        isSelected
+          ? 'border-[#1b3a2a] bg-[#f0f7f2] shadow-md'
+          : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
+      }`}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={`${cfg.bg} ${cfg.text} px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5`}>
+          <BadgeIcon size={12} strokeWidth={3} />
+          {cfg.label}
         </div>
-
-        <div className="flex items-center gap-2 flex-wrap mb-4">
-          {route.tags.map((tag) => (
-            <span key={tag} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1 text-[11px] font-bold text-gray-600">
-              {tag}
-            </span>
-          ))}
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1 flex items-center gap-1.5">
-            <Shield size={11} className="text-emerald-600" strokeWidth={2.5} />
-            <span className="text-[11px] font-bold text-emerald-600 tabular-nums">{route.confidence}%</span>
-          </div>
-          <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1 flex items-center gap-1.5">
-            <ChevronRight size={11} className="text-gray-400" />
-            <span className="text-[11px] font-bold text-gray-600">
-              {route.transfers} transfer{route.transfers !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-wrap mb-1">
-          {route.steps.map((step, i) => {
-            const cfg = getModeConfig(step.mode);
-            const Icon = cfg.icon;
-            return (
-              <div key={i} className="flex items-center gap-1.5">
-                <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg ${cfg.bg} border ${cfg.border}`}>
-                  <Icon size={12} className={cfg.color} strokeWidth={2.5} />
-                  <span className={`text-[11px] font-bold ${cfg.color}`}>{step.duration}m</span>
-                </div>
-                {i < route.steps.length - 1 && <ChevronRight size={12} className="text-gray-300" />}
-              </div>
-            );
-          })}
-        </div>
-
-        {route.lastMile && (
-          <p className="text-[11px] text-gray-400 font-medium mt-2 flex items-center gap-1">
-            <Navigation size={10} className="text-gray-400" />
-            {route.lastMile}
-          </p>
+        {isSelected && (
+          <CheckCircle2 size={16} className="text-[#1b3a2a]" />
         )}
-
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setExpanded(!expanded)}
-          className={`w-full mt-5 py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300 ${
-            expanded
-              ? 'bg-gray-100 text-gray-600 border border-gray-200 shadow-inner'
-              : 'bg-gradient-to-r from-[#1b3a2a] to-[#2c5f45] text-white shadow-[0_8px_16px_rgba(27,58,42,0.2)] hover:shadow-[0_12px_20px_rgba(27,58,42,0.3)]'
-          }`}
-        >
-          {expanded ? 'Collapse Steps' : 'View Step-by-Step'}
-          <ChevronRight size={16} className={`transition-transform duration-300 ${expanded ? 'rotate-90' : ''}`} />
-        </motion.button>
       </div>
 
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="px-6 pb-6 pt-2 border-t border-gray-100">
-              <div className="bg-gray-50 rounded-2xl p-5 space-y-0">
-                {route.steps.map((step: BackendRouteStep, i: number) => {
-                  const cfg = getModeConfig(step.mode);
-                  const Icon = cfg.icon;
-                  return (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.08, duration: 0.3 }}
-                      className="flex gap-3"
-                    >
-                      <div className="flex flex-col items-center pt-1">
-                        <div className={`w-8 h-8 rounded-xl ${cfg.bg} border ${cfg.border} flex items-center justify-center flex-shrink-0`}>
-                          <Icon size={14} className={cfg.color} strokeWidth={2.5} />
-                        </div>
-                        {i < route.steps.length - 1 && (
-                          <div className="w-0.5 flex-1 bg-gray-200 my-1 min-h-[20px]" />
-                        )}
-                      </div>
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-white rounded-xl p-3 border border-gray-100">
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-bold text-gray-900 tabular-nums">{route.durationMin}</span>
+            <span className="text-xs font-semibold text-gray-400">min</span>
+          </div>
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5 uppercase tracking-wider">Total Time</p>
+        </div>
+        <div className="bg-white rounded-xl p-3 border border-gray-100">
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-bold text-gray-900">₹{route.estimatedCost}</span>
+          </div>
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5 uppercase tracking-wider">Est. Cost</p>
+        </div>
+        <div className="bg-white rounded-xl p-3 border border-gray-100">
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-bold text-gray-900">{route.distanceKm}</span>
+            <span className="text-xs font-semibold text-gray-400">km</span>
+          </div>
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5 uppercase tracking-wider">Distance</p>
+        </div>
+        <div className="bg-white rounded-xl p-3 border border-gray-100">
+          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg ${traffic.bg}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${traffic.dot}`} />
+            <span className={`text-[10px] font-bold ${traffic.color}`}>{traffic.label}</span>
+          </div>
+          <p className="text-[10px] text-gray-400 font-medium mt-1.5 uppercase tracking-wider">Traffic</p>
+        </div>
+      </div>
 
-                      <div className="pb-4 last:pb-0 flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="font-bold text-sm text-gray-900">{step.label}</p>
-                          <span className="text-xs font-semibold text-gray-500 flex items-center gap-1 tabular-nums">
-                            <Clock size={11} />
-                            {step.duration} min
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-0.5">{step.distance}</p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
+      {/* Resource Flow */}
+      <div className="mb-4 p-3 bg-white rounded-xl border border-gray-100">
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Transport Mix</p>
+        <ResourceFlow resources={route.resources || []} />
+      </div>
+
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-1.5">
+          <Shield size={11} className="text-emerald-500" />
+          <span className="text-xs font-bold text-emerald-600">{route.confidence}%</span>
+          <span className="text-[10px] text-gray-400">confidence</span>
+        </div>
+        {route.predictedDelay > 0 && (
+          <div className="flex items-center gap-1">
+            <AlertTriangle size={10} className="text-amber-500" />
+            <span className="text-[10px] font-bold text-amber-600">+{route.predictedDelay} min peak</span>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
 
-// Main Screen
 const LiveMapScreen = () => {
   const storedLiveLocation = readLiveLocationFromSession();
 
-  const [source, setSource] = useState(
-    () => storedLiveLocation?.area || storedLiveLocation?.address || ''
-  );
+  const [source, setSource] = useState(() => storedLiveLocation?.area || storedLiveLocation?.address || '');
   const [destination, setDestination] = useState('');
+  // Multi-stop state: array of intermediate stop strings
+  const [stops, setStops] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ routes: BackendRoute[]; distanceKm: number } | null>(null);
-
-  // Map state
-  const [originCoords, setOriginCoords] = useState<LatLng | null>(
-    storedLiveLocation ? { lat: storedLiveLocation.lat, lng: storedLiveLocation.lng } : null
-  );
-  const [destCoords, setDestCoords] = useState<LatLng | null>(null);
+  const [routes, setRoutes] = useState<BackendRoute[]>([]);
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
+  const [distanceKm, setDistanceKm] = useState(0);
+  const [recommended, setRecommended] = useState<AIRecommendation | null>(null);
   const [mapRoutes, setMapRoutes] = useState<MapRoute[]>([]);
   const [geoError, setGeoError] = useState<string | null>(null);
 
   const handleSwap = () => {
     setSource(destination);
     setDestination(source);
-    setResult(null);
+    setStops([]);
+    setRoutes([]);
+    setSelectedRoute(null);
+    setMapRoutes([]);
+    setRecommended(null);
+  };
+
+  const addStop = () => {
+    if (stops.length < 3) {
+      setStops([...stops, '']);
+    }
+  };
+
+  const updateStop = (idx: number, val: string) => {
+    const updated = [...stops];
+    updated[idx] = val;
+    setStops(updated);
+    setRoutes([]);
+    setSelectedRoute(null);
+  };
+
+  const removeStop = (idx: number) => {
+    setStops(stops.filter((_, i) => i !== idx));
+    setRoutes([]);
+    setSelectedRoute(null);
   };
 
   const handleSearch = async () => {
@@ -294,9 +270,7 @@ const LiveMapScreen = () => {
     const dst = destination.trim();
 
     const storedLabel = storedLiveLocation?.area || storedLiveLocation?.address || '';
-    const canUseStoredOrigin =
-      !!storedLiveLocation &&
-      (!src || src.toLowerCase() === storedLabel.toLowerCase());
+    const canUseStoredOrigin = !!storedLiveLocation && (!src || src.toLowerCase() === storedLabel.toLowerCase());
 
     if (!dst || (!src && !canUseStoredOrigin)) {
       setError('Please enter both origin and destination.');
@@ -306,115 +280,150 @@ const LiveMapScreen = () => {
     setError(null);
     setGeoError(null);
     setLoading(true);
+    setRoutes([]);
+    setSelectedRoute(null);
+    setMapRoutes([]);
 
-    const originPromise: Promise<LatLng> = canUseStoredOrigin
-      ? Promise.resolve({ lat: storedLiveLocation!.lat, lng: storedLiveLocation!.lng })
-      : geocodeLocation(src);
+    try {
+      const originPromise: Promise<LatLng> = canUseStoredOrigin
+        ? Promise.resolve({ lat: storedLiveLocation!.lat, lng: storedLiveLocation!.lng })
+        : geocodeLocation(src);
 
-    const [routeData, geoResult] = await Promise.allSettled([
-      planRoute(src || storedLiveLocation?.area || storedLiveLocation?.address || 'Current location', dst),
-      Promise.all([originPromise, geocodeLocation(dst)]),
-    ]);
+      const [routeData, geoResult] = await Promise.allSettled([
+        planRoute(src || storedLiveLocation?.area || storedLiveLocation?.address || 'Current location', dst),
+        Promise.all([originPromise, geocodeLocation(dst)]),
+      ]);
 
-    if (routeData.status === 'fulfilled') {
-      setResult({ routes: routeData.value.routes, distanceKm: routeData.value.distanceKm });
-    } else {
-      setError('Could not connect to the backend. Make sure the server is running on port 5000.');
+      if (routeData.status === 'fulfilled') {
+        const resp = routeData.value;
+        const backendRoutes = resp?.routes || [];
+        const recId = resp?.recommended?.routeId;
+
+        setRoutes(backendRoutes);
+        setSelectedRoute(recId || backendRoutes[0]?.id || null);
+        setDistanceKm(resp?.distanceKm || 0);
+        setRecommended(resp?.recommended || null);
+        setMapRoutes(buildRoutesFromBackend(backendRoutes, recId));
+      } else {
+        setError('Could not connect to the backend. Make sure the server is running on port 5000.');
+      }
+
+      if (geoResult.status === 'rejected') {
+        setGeoError('Could not geocode one or both locations.');
+      }
+    } catch (err) {
+      console.error('LiveMap: handleSearch error', err);
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
-
-    if (geoResult.status === 'fulfilled') {
-      const [oCoords, dCoords] = geoResult.value;
-      setOriginCoords(oCoords);
-      setDestCoords(dCoords);
-      setMapRoutes(buildRoutes(oCoords, dCoords));
-    } else {
-      setGeoError('Could not find one or both locations on the map.');
-      setOriginCoords(
-        canUseStoredOrigin && storedLiveLocation
-          ? { lat: storedLiveLocation.lat, lng: storedLiveLocation.lng }
-          : null
-      );
-      setDestCoords(null);
-      setMapRoutes([]);
-    }
-
-    setLoading(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleSearch();
   };
 
+  const handleSelectRoute = (routeId: string) => {
+    setSelectedRoute(routeId);
+  };
+
+  const activeRoute = routes.find((r) => r.id === selectedRoute);
+  const insights = recommended?.insights;
+
   return (
-    <motion.div
-      variants={stagger}
-      initial="hidden"
-      animate="show"
-      className="w-full max-w-[1200px] mx-auto pb-10"
-    >
+    <motion.div variants={stagger} initial="hidden" animate="show" className="w-full max-w-[1200px] mx-auto pb-10">
       <motion.div variants={fadeUp} className="mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">Live Map</h1>
-        <p className="text-gray-500 font-medium">AI-powered route planning with real-time intelligence</p>
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">AI Route Optimizer</h1>
+        <p className="text-gray-500 font-medium">Compare routes, analyze trade-offs, and let AI pick the best option</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-8">
-        <div className="space-y-6">
-          <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-7 shadow-sm border border-gray-100">
-            <h3 className="font-bold text-lg text-gray-900 mb-6">Plan Your Journey</h3>
+      <div className="grid grid-cols-1 xl:grid-cols-[400px_1fr] gap-8">
+        {/* ── LEFT PANEL ── */}
+        <div className="space-y-5">
+          <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100">
+            <h3 className="font-bold text-base text-gray-900 mb-5">Plan Your Journey</h3>
 
+            {/* Origin */}
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
-                <MapPin size={18} strokeWidth={2.5} className="text-blue-600" />
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                <MapPin size={15} strokeWidth={2.5} className="text-blue-600" />
               </div>
               <input
-                id="live-map-origin"
                 value={source}
-                onChange={(e) => {
-                  setSource(e.target.value);
-                  setResult(null);
-                }}
+                onChange={(e) => { setSource(e.target.value); setRoutes([]); setSelectedRoute(null); }}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter origin (e.g. Andheri)"
-                className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
+                className="w-full px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
               />
             </div>
 
-            <div className="flex items-center justify-between pl-5 h-10 relative">
+            {/* Connector + Swap */}
+            <div className="flex items-center justify-between pl-4 h-8 relative">
               <div className="border-l-2 border-dashed border-gray-200 h-full" />
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9, rotate: 180 }}
                 onClick={handleSwap}
-                className="w-9 h-9 bg-white rounded-full border border-gray-200 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
+                className="w-8 h-8 bg-white rounded-full border border-gray-200 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
               >
-                <ArrowUpDown size={15} strokeWidth={2.5} className="text-gray-500" />
+                <ArrowUpDown size={13} strokeWidth={2.5} className="text-gray-500" />
               </motion.button>
             </div>
 
+            {/* Intermediate Stops */}
+            {stops.map((stop, idx) => (
+              <div key={idx} className="flex items-center gap-3 mb-1 mt-1">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center flex-shrink-0">
+                  <Navigation size={13} strokeWidth={2.5} className="text-purple-500" />
+                </div>
+                <input
+                  value={stop}
+                  onChange={(e) => updateStop(idx, e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={`Stop ${idx + 1} (e.g. Dadar)`}
+                  className="w-full px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => removeStop(idx)}
+                  className="w-7 h-7 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center hover:bg-red-100 transition-colors flex-shrink-0"
+                >
+                  <X size={12} className="text-red-500" />
+                </motion.button>
+              </div>
+            ))}
+
+            {/* Destination */}
             <div className="flex items-center gap-3 mt-1">
-              <div className="w-11 h-11 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center flex-shrink-0">
-                <Flag size={18} strokeWidth={2.5} className="text-red-500" />
+              <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center flex-shrink-0">
+                <Flag size={15} strokeWidth={2.5} className="text-red-500" />
               </div>
               <input
-                id="live-map-destination"
                 value={destination}
-                onChange={(e) => {
-                  setDestination(e.target.value);
-                  setResult(null);
-                }}
+                onChange={(e) => { setDestination(e.target.value); setRoutes([]); setSelectedRoute(null); }}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter destination (e.g. BKC)"
-                className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
+                className="w-full px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
               />
             </div>
 
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-2"
+            {/* Add Stop Button */}
+            {stops.length < 3 && (
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={addStop}
+                className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs font-semibold hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50 transition-all"
               >
-                <AlertCircle size={15} className="text-red-500 flex-shrink-0 mt-0.5" />
+                <Plus size={13} strokeWidth={2.5} />
+                Add Stop (A → B → C → D)
+              </motion.button>
+            )}
+
+            {error && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+                <AlertCircle size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
                 <p className="text-xs font-medium text-red-600">{error}</p>
               </motion.div>
             )}
@@ -424,94 +433,72 @@ const LiveMapScreen = () => {
               whileTap={{ scale: 0.97 }}
               onClick={handleSearch}
               disabled={loading}
-              id="live-map-search-btn"
-              className="w-full mt-6 py-4 bg-gradient-to-r from-[#1b3a2a] to-[#2c5f45] text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_8px_16px_rgba(27,58,42,0.2)] hover:shadow-[0_12px_20px_rgba(27,58,42,0.3)] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full mt-5 py-3.5 bg-gradient-to-r from-[#1b3a2a] to-[#2c5f45] text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_8px_16px_rgba(27,58,42,0.2)] hover:shadow-[0_12px_20px_rgba(27,58,42,0.3)] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Finding best routes…
+                  <Loader2 size={16} className="animate-spin" />
+                  Analyzing routes…
                 </>
               ) : (
                 <>
-                  <Search size={18} />
-                  Find Routes
+                  <BarChart3 size={16} />
+                  Analyze Routes
                 </>
               )}
             </motion.button>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="bg-[#1b3a2a] rounded-[28px] p-6 text-white relative overflow-hidden">
+          <motion.div variants={fadeUp} className="bg-[#1b3a2a] rounded-[28px] p-5 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
             <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles size={16} className="text-[#c5f02c]" />
-                <span className="text-xs font-bold uppercase tracking-wider text-[#c5f02c]">AI-Powered</span>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={14} className="text-[#c5f02c]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-[#c5f02c]">AI Decision Engine</span>
               </div>
-              <h4 className="font-bold text-base mb-1">Smart Route Engine</h4>
+              <h4 className="font-bold text-sm mb-1">Smart Route Analysis</h4>
               <p className="text-white/60 text-xs font-medium leading-relaxed">
-                Our backend calculates fastest, cheapest, and comfort-optimised routes using real-time traffic patterns and transit data.
+                Our AI evaluates multiple route options using real-time traffic, distance, and cost data to recommend the optimal choice.
               </p>
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                {[
-                  { label: 'Fastest', icon: '⚡' },
-                  { label: 'Cheapest', icon: '₹' },
-                  { label: 'Comfort', icon: '😌' },
-                ].map((item) => (
-                  <div key={item.label} className="bg-white/10 rounded-xl p-2.5 text-center border border-white/10">
-                    <div className="text-lg mb-0.5">{item.icon}</div>
-                    <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{item.label}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           </motion.div>
         </div>
 
-        <div className="space-y-6">
-          <motion.div variants={fadeUp} className="w-full" style={{ height: 420 }}>
-            <MapComponent originCoords={originCoords} destCoords={destCoords} routes={mapRoutes} />
+        {/* ── RIGHT PANEL ── */}
+        <div className="space-y-5">
+          <motion.div variants={fadeUp} className="w-full" style={{ height: 400 }}>
+            <MapComponent
+              routes={mapRoutes}
+              selectedRouteId={selectedRoute || undefined}
+              sourceLabel={source}
+              destinationLabel={destination}
+            />
           </motion.div>
 
           {geoError && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-2xl"
-            >
-              <AlertCircle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-2xl">
+              <AlertCircle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs font-medium text-amber-700">{geoError}</p>
             </motion.div>
           )}
 
           <AnimatePresence mode="wait">
             {loading && (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-16 gap-4"
-              >
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-16 gap-4">
                 <div className="w-14 h-14 rounded-full bg-[#1b3a2a]/10 flex items-center justify-center">
                   <Loader2 size={24} className="text-[#1b3a2a] animate-spin" />
                 </div>
-                <p className="text-gray-500 font-medium text-sm">Calculating optimal routes…</p>
+                <p className="text-gray-500 font-medium text-sm">Analyzing optimal routes…</p>
               </motion.div>
             )}
 
-            {!loading && result && (
-              <motion.div
-                key="results"
-                variants={stagger}
-                initial="hidden"
-                animate="show"
-                className="space-y-4"
-              >
+            {!loading && routes.length > 0 && (
+              <motion.div key="results" variants={stagger} initial="hidden" animate="show" className="space-y-5">
+                {/* Results Header */}
                 <motion.div variants={fadeUp} className="flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-500">
-                    <span className="font-bold text-gray-900">{result.routes.length}</span> routes found
-                    <span className="ml-2 text-gray-400">· ~{result.distanceKm} km</span>
+                    <span className="font-bold text-gray-900">{routes.length}</span> routes analyzed
+                    <span className="ml-2 text-gray-400">· ~{distanceKm} km corridor</span>
                   </p>
                   <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -519,27 +506,185 @@ const LiveMapScreen = () => {
                   </div>
                 </motion.div>
 
-                {result.routes.map((route, idx) => (
-                  <RouteCard key={route.id} route={route} index={idx} />
+                {/* AI Insight Banner */}
+                {insights && (
+                  <motion.div variants={fadeUp} className="bg-gradient-to-r from-[#1b3a2a] to-[#2c5f45] rounded-2xl p-5 text-white">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles size={14} className="text-[#c5f02c]" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#c5f02c]">AI Recommendation</span>
+                    </div>
+                    <p className="text-sm font-medium text-white/90 leading-relaxed mb-3">{recommended?.explanation}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {insights.timeSaved > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-lg">
+                          <TrendingDown size={11} className="text-[#c5f02c]" />
+                          Saves {insights.timeSaved} min
+                        </span>
+                      )}
+                      {insights.costSaved > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-lg">
+                          <Wallet size={11} className="text-[#c5f02c]" />
+                          ₹{insights.costSaved} cheaper
+                        </span>
+                      )}
+                      {insights.avoidedTraffic && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-lg">
+                          <Gauge size={11} className="text-[#c5f02c]" />
+                          Avoids heavy traffic
+                        </span>
+                      )}
+                      {insights.predictedDelay > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-lg">
+                          <AlertTriangle size={11} className="text-[#c5f02c]" />
+                          +{insights.predictedDelay} min delay avoided
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Route Summary Cards — equal-width grid */}
+                <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3">
+                  {routes.map((route) => {
+                    const cfg = routeTypeConfig[route.type] || routeTypeConfig.comfort;
+                    const isSelected = route.id === selectedRoute;
+                    const Icon = cfg.icon;
+                    return (
+                      <motion.div
+                        key={route.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleSelectRoute(route.id)}
+                        className={`rounded-2xl p-4 border-2 cursor-pointer transition-all flex flex-col gap-2 ${
+                          isSelected
+                            ? 'border-[#1b3a2a] bg-[#f0f7f2] shadow-md'
+                            : 'border-gray-100 bg-white hover:border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
+                          <Icon size={11} className={isSelected ? 'text-[#1b3a2a]' : 'text-gray-400'} />
+                          <span className="text-xs font-bold text-gray-900">{cfg.label}</span>
+                          {isSelected && (
+                            <span className="text-[9px] font-bold bg-[#1b3a2a] text-white px-1.5 py-0.5 rounded ml-auto">✓</span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-baseline gap-0.5">
+                            <span className="text-xl font-bold text-gray-900 tabular-nums">{route.durationMin}</span>
+                            <span className="text-[10px] font-semibold text-gray-400">min</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] text-gray-500 mt-0.5">
+                            <span>₹{route.estimatedCost}</span>
+                            <span>{route.distanceKm} km</span>
+                          </div>
+                        </div>
+                        <ResourceFlow resources={route.resources || []} compact />
+                        <div className="flex items-center gap-1 mt-auto pt-1 border-t border-gray-100/80">
+                          <Shield size={9} className="text-emerald-500" />
+                          <span className="text-[10px] font-bold text-emerald-600">{route.confidence}%</span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+
+                {/* Detailed Route Cards */}
+                {routes.map((route) => (
+                  <RouteCard
+                    key={route.id}
+                    route={route}
+                    isSelected={route.id === selectedRoute}
+                    onSelect={() => handleSelectRoute(route.id)}
+                  />
                 ))}
+
+                {/* Selected Route Analysis Panel */}
+                {activeRoute && (
+                  <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100">
+                    <h4 className="font-bold text-sm text-gray-900 mb-4 flex items-center gap-2">
+                      <BarChart3 size={14} className="text-[#1b3a2a]" />
+                      Route Analysis — {routeTypeConfig[activeRoute.type]?.label || activeRoute.type}
+                    </h4>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gray-50 rounded-2xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock size={13} className="text-gray-400" />
+                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Time</span>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{activeRoute.durationMin} <span className="text-sm font-medium text-gray-400">min</span></p>
+                        {activeRoute.predictedDelay > 0 && (
+                          <p className="text-[11px] text-amber-600 mt-1 font-medium">+{activeRoute.predictedDelay} min during peak hours</p>
+                        )}
+                      </div>
+
+                      <div className="bg-gray-50 rounded-2xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingDown size={13} className="text-gray-400" />
+                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Distance</span>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{activeRoute.distanceKm} <span className="text-sm font-medium text-gray-400">km</span></p>
+                      </div>
+
+                      <div className="bg-gray-50 rounded-2xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Wallet size={13} className="text-gray-400" />
+                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Cost</span>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">₹{activeRoute.estimatedCost}</p>
+                      </div>
+
+                      <div className="bg-gray-50 rounded-2xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Gauge size={13} className="text-gray-400" />
+                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Traffic</span>
+                        </div>
+                        {(() => {
+                          const tc = trafficConfig[activeRoute.trafficLevel] || trafficConfig.medium;
+                          return (
+                            <>
+                              <p className={`text-lg font-bold ${tc.color}`}>{tc.label}</p>
+                              {activeRoute.trafficLevel === 'high' && (
+                                <p className="text-[11px] text-red-500 mt-1 font-medium">Expect delays</p>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Transport Mix for selected */}
+                    <div className="mt-4 p-4 bg-gray-50 rounded-2xl">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Transport Mix</p>
+                      <ResourceFlow resources={activeRoute.resources || []} />
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-4 pt-4 border-t border-gray-100">
+                      <div className="flex items-center gap-1.5">
+                        <Shield size={12} className="text-emerald-500" />
+                        <span className="text-sm font-bold text-emerald-600">{activeRoute.confidence}%</span>
+                        <span className="text-xs text-gray-400">AI confidence</span>
+                      </div>
+                      {activeRoute.transfers > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <ArrowUpDown size={12} className="text-gray-400" />
+                          <span className="text-sm font-medium text-gray-600">{activeRoute.transfers} transfers</span>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
               </motion.div>
             )}
 
-            {!loading && !result && !error && (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="bg-white rounded-[28px] shadow-sm border border-gray-100 p-10 flex flex-col items-center justify-center text-center"
-              >
+            {!loading && routes.length === 0 && !error && (
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-white rounded-[28px] shadow-sm border border-gray-100 p-10 flex flex-col items-center justify-center text-center">
                 <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mb-4">
-                  <Navigation size={24} className="text-gray-300" />
+                  <BarChart3 size={24} className="text-gray-300" />
                 </div>
-                <h4 className="font-bold text-gray-900 mb-1">No routes yet</h4>
-                <p className="text-sm text-gray-400 font-medium">
-                  Enter your origin and destination to get AI-optimised routes
-                </p>
+                <h4 className="font-bold text-gray-900 mb-1">No routes analyzed</h4>
+                <p className="text-sm text-gray-400 font-medium">Enter origin and destination to compare AI-optimized routes</p>
               </motion.div>
             )}
           </AnimatePresence>

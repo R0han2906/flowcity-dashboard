@@ -1,434 +1,16 @@
-// import { useState, useEffect } from 'react';
-// import { motion, AnimatePresence } from 'framer-motion';
-// import {
-//   ChevronLeft, ChevronRight, Train, Bus, Car, Footprints,
-//   AlertTriangle, Calendar, Shield, TrendingUp, Clock, CheckCircle2,
-//   XCircle, Users, Trash2, Shuffle, Play, TriangleAlert
-// } from 'lucide-react';
-// import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
-// import { journeyHistory, weeklyTrips } from '@/lib/mock-data';
-// import { MODE_ICONS, MODE_BORDER_COLORS } from '@/lib/constants';
-
-// const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
-// const fadeUp = {
-//   hidden: { opacity: 0, y: 15 },
-//   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
-// };
-
-// const statusColors: Record<string, string> = {
-//   'on-time': 'bg-fc-success',
-//   delayed: 'bg-fc-warning',
-//   disrupted: 'bg-fc-danger',
-// };
-
-// const modeBarColors: Record<string, string> = {
-//   metro: '#3B82F6',
-//   bus: '#FACC15',
-//   walk: '#A1A1AA',
-//   auto: '#22C55E',
-// };
-
-// // Filter configuration with icons
-// const filterConfig = [
-//   { id: 'ALL', icon: null, label: 'ALL' },
-//   { id: 'METRO', icon: Train, label: 'METRO' },
-//   { id: 'BUS', icon: Bus, label: 'BUS' },
-//   { id: 'AUTO', icon: Car, label: 'AUTO' },
-//   { id: 'DISRUPTED', icon: AlertTriangle, label: 'DISRUPTED' },
-//   { id: 'THIS_WEEK', icon: Calendar, label: 'THIS WEEK' },
-// ];
-
-// const trendData = Array.from({ length: 30 }, (_, i) => ({
-//   day: i + 1,
-//   time: 22 + Math.random() * 16,
-// }));
-// const costData = [
-//   { name: 'Metro', value: 540, color: '#3B82F6' },
-//   { name: 'Bus', value: 180, color: '#FACC15' },
-//   { name: 'Auto', value: 120, color: '#22C55E' },
-// ];
-
-// // Number counter hook
-// function useNumberCounter(target: number, duration = 1.5) {
-//   const [display, setDisplay] = useState(0);
-//   const [done, setDone] = useState(false);
-
-//   useEffect(() => {
-//     if (done) return;
-//     let start = 0;
-//     const startTime = performance.now();
-
-//     const animate = (currentTime: number) => {
-//       const elapsed = (currentTime - startTime) / 1000;
-//       const progress = Math.min(elapsed / duration, 1);
-//       // Ease out cubic
-//       const ease = 1 - Math.pow(1 - progress, 3);
-//       setDisplay(Math.round(ease * target));
-//       if (progress < 1) {
-//         requestAnimationFrame(animate);
-//       } else {
-//         setDone(true);
-//       }
-//     };
-
-//     requestAnimationFrame(animate);
-//   }, [target, duration, done]);
-
-//   return display;
-// }
-
-// const HistoryScreen = () => {
-//   const [activeFilter, setActiveFilter] = useState('ALL');
-//   const [expandedJourney, setExpandedJourney] = useState<string | null>(null);
-
-//   // Animated stats
-//   const totalTrips = useNumberCounter(32, 1.8);
-//   const totalCost = useNumberCounter(840, 1.8);
-//   const totalTimeSaved = useNumberCounter(4.2, 1.8);
-
-//   // Filtered journey list
-//   const filteredJourneys = journeyHistory.filter((j) => {
-//     if (activeFilter === 'ALL') return true;
-//     if (activeFilter === 'DISRUPTED') return j.status === 'disrupted';
-//     if (activeFilter === 'THIS_WEEK') {
-//       const weekAgo = new Date();
-//       weekAgo.setDate(weekAgo.getDate() - 7);
-//       return new Date(j.date) >= weekAgo;
-//     }
-//     const modeKey = activeFilter.toLowerCase() as keyof typeof modeBarColors;
-//     return j.mode === modeKey;
-//   });
-
-//   return (
-//     <motion.div
-//       variants={stagger}
-//       initial="hidden"
-//       animate="show"
-//       className="w-full max-w-[1200px] mx-auto pb-10"
-//     >
-//       {/* ─── Header ─── */}
-//       <motion.div variants={fadeUp} className="mb-10">
-//         <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">
-//           Journey History
-//         </h1>
-//         <p className="text-gray-500 font-medium">
-//           Track your commutes and analyze your travel patterns
-//         </p>
-//       </motion.div>
-
-//       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-//         {/* ═══════════════════════════════════════════
-//             LEFT COLUMN — History List & Filters
-//            ═══════════════════════════════════════════ */}
-//         <div className="space-y-6">
-//           {/* Monthly Summary */}
-//           <motion.div
-//             variants={fadeUp}
-//             className="bg-white border-[3px] border-border-hard p-6 rounded-[28px] shadow-sm"
-//             style={{ boxShadow: '6px 6px 0px hsl(var(--shadow-color))' }}
-//           >
-//             <div className="flex items-center justify-between mb-6">
-//               <div className="flex items-center gap-2">
-//                 <button className="w-8 h-8 border-2 border-border-hard flex items-center justify-center brutal-btn bg-bg-inset">
-//                   <ChevronLeft size={16} strokeWidth={2.5} />
-//                 </button>
-//                 <h3 className="font-display text-lg font-bold uppercase text-text-primary">MARCH 2026</h3>
-//                 <button className="w-8 h-8 border-2 border-border-hard flex items-center justify-center brutal-btn bg-bg-inset">
-//                   <ChevronRight size={16} strokeWidth={2.5} />
-//                 </button>
-//               </div>
-//               <div className="flex gap-2">
-//                 <span className="brutal-chip bg-bg-inset border-2 border-border-hard text-[10px] text-text-muted-fc">
-//                   THIS MONTH
-//                 </span>
-//               </div>
-//             </div>
-
-//             <div className="grid grid-cols-3 gap-4 mb-6">
-//               <div className="text-center">
-//                 <div className="font-display text-[32px] font-extrabold text-text-primary tabular-nums">
-//                   {totalTrips}
-//                 </div>
-//                 <p className="font-mono-label text-[10px] text-text-muted-fc">TRIPS</p>
-//               </div>
-//               <div className="text-center">
-//                 <div className="font-display text-[32px] font-extrabold text-fc-warning tabular-nums">
-//                   {totalCost}
-//                 </div>
-//                 <p className="font-mono-label text-[10px] text-text-muted-fc">SPENT</p>
-//               </div>
-//               <div className="text-center">
-//                 <div className="font-display text-[32px] font-extrabold text-fc-success tabular-nums">
-//                   {totalTimeSaved}
-//                 </div>
-//                 <p className="font-mono-label text-[10px] text-text-muted-fc">HRS SAVED</p>
-//               </div>
-//             </div>
-
-//             {/* Weekly Trips Bar Chart */}
-//             <div className="h-[160px] bg-bg-base border-2 border-border-hard p-2 rounded-[4px]">
-//               <ResponsiveContainer width="100%" height="100%">
-//                 <BarChart data={weeklyTrips}>
-//                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 16%)" />
-//                   <XAxis
-//                     dataKey="day"
-//                     tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: '#52525B' }}
-//                   />
-//                   <YAxis
-//                     tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: '#52525B' }}
-//                     domain={[0, 6]}
-//                   />
-//                   <Bar
-//                     dataKey="trips"
-//                     radius={0}
-//                     stroke="none"
-//                     animationDuration={800}
-//                   >
-//                     {weeklyTrips.map((entry, index) => (
-//                       <Cell
-//                         key={index}
-//                         fill={modeBarColors[entry.mode] || '#3B82F6'}
-//                         animationDuration={800}
-//                       />
-//                     ))}
-//                   </Bar>
-//                 </BarChart>
-//               </ResponsiveContainer>
-//             </div>
-
-//             <div className="mt-4 flex gap-[3px] w-full h-[10px]">
-//               <div className="bg-fc-metro h-full" style={{ width: '60%' }} />
-//               <div className="bg-fc-bus h-full" style={{ width: '30%' }} />
-//               <div className="bg-fc-walk h-full" style={{ width: '10%' }} />
-//             </div>
-//             <div className="flex gap-4 mt-1">
-//               <span className="font-mono-label text-[10px] text-text-muted-fc">🚇 60%</span>
-//               <span className="font-mono-label text-[10px] text-text-muted-fc">🚌 30%</span>
-//               <span className="font-mono-label text-[10px] text-text-muted-fc">🚶 10%</span>
-//             </div>
-//           </motion.div>
-
-//           {/* Filters */}
-//           <motion.div
-//             variants={fadeUp}
-//             className="flex gap-2 overflow-x-auto hide-scrollbar"
-//           >
-//             {filterConfig.map((f) => (
-//               <button
-//                 key={f.id}
-//                 onClick={() => setActiveFilter(f.id)}
-//                 className={`brutal-chip flex-shrink-0 ${activeFilter === f.id
-//                   ? 'border-fc-accent bg-fc-accent/10 text-fc-accent'
-//                   : 'border-border-hard bg-bg-inset text-text-muted-fc'
-//                   }`}
-//               >
-//                 {f.icon && (
-//                   <f.icon size={14} strokeWidth={2.5} className="mr-1.5" />
-//                 )}
-//                 <span className="font-bold text-[10px] uppercase tracking-wider">
-//                   {f.label}
-//                 </span>
-//               </button>
-//             ))}
-//           </motion.div>
-
-//           {/* Journey List */}
-//           <motion.div
-//             variants={fadeUp}
-//             className="space-y-3"
-//           >
-//             <AnimatePresence>
-//               {filteredJourneys.map((j, idx) => {
-//                 const ModeIcon = MODE_ICONS[j.mode];
-//                 return (
-//                   <motion.div
-//                     key={j.id}
-//                     initial={{ opacity: 0, y: 20 }}
-//                     animate={{ opacity: 1, y: 0 }}
-//                     exit={{ opacity: 0, y: 20 }}
-//                     transition={{ delay: idx * 0.05, duration: 0.3 }}
-//                     className="brutal-card p-4 flex items-center gap-4 cursor-pointer relative"
-//                   >
-//                     {/* Status indicator */}
-//                     <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${statusColors[j.status]}`} />
-
-//                     {/* Mode icon */}
-//                     <div className={`w-10 h-10 border-2 flex items-center justify-center flex-shrink-0 ${MODE_BORDER_COLORS[j.mode]} text-lg`}>
-//                       <ModeIcon size={18} strokeWidth={2.5} />
-//                     </div>
-
-//                     {/* Journey details */}
-//                     <div className="flex-1 min-w-0">
-//                       <p className="font-body text-sm font-semibold text-text-primary truncate">
-//                         {j.from} → {j.to}
-//                       </p>
-//                       <p className="font-mono-label text-[11px] text-text-muted-fc">
-//                         {j.modeLabel}
-//                       </p>
-//                       <p className="font-mono-label text-[11px] text-text-muted-fc">
-//                         {j.date}, {j.time}
-//                       </p>
-//                     </div>
-
-//                     {/* Right info */}
-//                     <div className="text-right flex-shrink-0">
-//                       <p className="font-body text-sm font-bold text-text-primary tabular-nums">
-//                         {j.duration} MIN
-//                       </p>
-//                       <p className="font-mono-label text-xs text-text-muted-fc">
-//                         ₹{j.cost}
-//                       </p>
-//                       {j.rerouted && (
-//                         <span className="font-mono-label text-[9px] text-fc-warning uppercase">
-//                           Rerouted
-//                         </span>
-//                       )}
-//                     </div>
-//                   </motion.div>
-//                 );
-//               })}
-//             </AnimatePresence>
-//           </motion.div>
-//         </div>
-
-//         {/* ═══════════════════════════════════════════
-//             RIGHT COLUMN — Analytics
-//            ═══════════════════════════════════════════ */}
-//         <div className="hidden lg:block space-y-6 mt-0">
-//           {/* Trend Chart */}
-//           <motion.div
-//             variants={fadeUp}
-//             className="brutal-card p-6"
-//           >
-//             <h3 className="font-display text-sm font-bold uppercase text-text-primary mb-4">
-//               30-DAY COMMUTE TREND
-//             </h3>
-//             <div className="h-[200px]">
-//               <ResponsiveContainer width="100%" height="100%">
-//                 <AreaChart data={trendData}>
-//                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 16%)" />
-//                   <XAxis
-//                     dataKey="day"
-//                     tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: '#52525B' }}
-//                   />
-//                   <YAxis
-//                     tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: '#52525B' }}
-//                   />
-//                   <Area
-//                     type="monotone"
-//                     dataKey="time"
-//                     stroke="#3B82F6"
-//                     fill="#3B82F6"
-//                     fillOpacity={0.08}
-//                     strokeWidth={2}
-//                     animationDuration={1000}
-//                   />
-//                 </AreaChart>
-//               </ResponsiveContainer>
-//             </div>
-//           </motion.div>
-
-//           {/* Cost Breakdown */}
-//           <motion.div
-//             variants={fadeUp}
-//             className="brutal-card p-6"
-//           >
-//             <h3 className="font-display text-sm font-bold uppercase text-text-primary mb-4">
-//               COST BREAKDOWN
-//             </h3>
-//             <div className="h-[200px]">
-//               <ResponsiveContainer width="100%" height="100%">
-//                 <PieChart>
-//                   <Pie
-//                     data={costData}
-//                     dataKey="value"
-//                     nameKey="name"
-//                     cx="50%"
-//                     cy="50%"
-//                     outerRadius={70}
-//                     strokeWidth={2}
-//                     stroke="hsl(0 0% 8%)"
-//                     animationDuration={1000}
-//                   >
-//                     {costData.map((entry, i) => (
-//                       <Cell key={i} fill={entry.color} animationDuration={1000} />
-//                     ))}
-//                   </Pie>
-//                 </PieChart>
-//               </ResponsiveContainer>
-//             </div>
-//             <div className="flex gap-4 justify-center mt-2">
-//               {costData.map((d) => (
-//                 <span key={d.name} className="font-mono-label text-[10px] text-text-muted-fc">
-//                   <span
-//                     className="inline-block w-2 h-2 mr-1 rounded-full"
-//                     style={{ backgroundColor: d.color }}
-//                   />
-//                   {d.name} ₹{d.value}
-//                 </span>
-//               ))}
-//             </div>
-//           </motion.div>
-
-//           {/* Achievements */}
-//           <motion.div
-//             variants={fadeUp}
-//             className="brutal-card p-6 space-y-3"
-//           >
-//             <h3 className="font-display text-sm font-bold uppercase text-text-primary mb-2">
-//               ACHIEVEMENTS
-//             </h3>
-//             <p className="font-mono-label text-xs text-fc-warning">
-//               🔥 7-DAY STREAK — PUBLIC TRANSIT EVERY WEEKDAY
-//             </p>
-//             <p className="font-mono-label text-xs text-fc-success">
-//               🌱 8.2 KG CO₂ SAVED THIS MONTH
-//             </p>
-//             <p className="font-mono-label text-xs text-fc-accent">
-//               ⚡ AVG COMMUTE: 26 MIN (4 MIN {'<'} CITY AVG)
-//             </p>
-//           </motion.div>
-//         </div>
-//       </div>
-//     </motion.div>
-//   );
-// };
-
-// export default HistoryScreen;
-
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Train, Bus, Car, Footprints,
-  AlertTriangle, Calendar, Shield, TrendingUp, Clock, CheckCircle2,
-  XCircle, Users, Trash2, Shuffle, Play, TriangleAlert
+  AlertTriangle, Calendar, Shield, Clock, CheckCircle2,
+  AlertCircle, TrendingDown, Wallet, BarChart3, Route,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
-  AreaChart, Area, PieChart, Pie, Cell,
+  AreaChart, Area, PieChart, Pie, Cell, Tooltip,
 } from 'recharts';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CONSTANTS
-// ─────────────────────────────────────────────────────────────────────────────
-
-const MODE_ICONS = {
-  metro: Train,
-  bus: Bus,
-  auto: Car,
-  walk: Footprints,
-} as const;
-
-const MODE_BORDER_COLORS = {
-  metro: 'border-blue-500',
-  bus: 'border-yellow-400',
-  auto: 'border-green-500',
-  walk: 'border-zinc-400',
-} as const;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type JourneyStatus = 'on-time' | 'delayed' | 'disrupted';
 type TransitMode = 'metro' | 'bus' | 'auto' | 'walk';
@@ -439,190 +21,46 @@ interface Journey {
   to: string;
   mode: TransitMode;
   modeLabel: string;
-  date: string;     // "March 31, 2026" — parseable by new Date()
+  routeType?: 'fastest' | 'cheapest' | 'comfort';
+  date: string;
   time: string;
-  duration: number; // minutes
-  cost: number;     // ₹
+  duration: number;
+  cost: number;
+  timeSaved?: number;
+  costSaved?: number;
   status: JourneyStatus;
   rerouted?: boolean;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA — 24 Mumbai commutes, March 2026
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const journeyHistory: Journey[] = [
-  // ── Mar 31 (Mon) ──
-  {
-    id: 'j01', from: 'Vasai', to: 'Churchgate',
-    mode: 'metro', modeLabel: 'Walk → Train → Walk',
-    date: 'March 31, 2026', time: '08:10 AM',
-    duration: 74, cost: 35, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j02', from: 'Churchgate', to: 'Vasai',
-    mode: 'metro', modeLabel: 'Walk → Train → Walk',
-    date: 'March 31, 2026', time: '07:05 PM',
-    duration: 80, cost: 35, status: 'delayed', rerouted: false,
-  },
-  // ── Mar 28 (Fri) ──
-  {
-    id: 'j03', from: 'Andheri', to: 'Nariman Point',
-    mode: 'metro', modeLabel: 'Metro → Walk → Bus',
-    date: 'March 28, 2026', time: '09:15 AM',
-    duration: 52, cost: 42, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j04', from: 'Nariman Point', to: 'Andheri',
-    mode: 'bus', modeLabel: 'Bus → Metro',
-    date: 'March 28, 2026', time: '06:50 PM',
-    duration: 65, cost: 22, status: 'delayed', rerouted: false,
-  },
-  // ── Mar 27 (Thu) ──
-  {
-    id: 'j05', from: 'Borivali', to: 'Churchgate',
-    mode: 'metro', modeLabel: 'Walk → Train → Walk',
-    date: 'March 27, 2026', time: '08:30 AM',
-    duration: 58, cost: 30, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j06', from: 'Churchgate', to: 'Dadar',
-    mode: 'metro', modeLabel: 'Train → Walk',
-    date: 'March 27, 2026', time: '01:15 PM',
-    duration: 18, cost: 10, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j07', from: 'Dadar', to: 'Borivali',
-    mode: 'bus', modeLabel: 'Bus → Walk',
-    date: 'March 27, 2026', time: '07:40 PM',
-    duration: 45, cost: 15, status: 'disrupted', rerouted: true,
-  },
-  // ── Mar 26 (Wed) ──
-  {
-    id: 'j08', from: 'Thane', to: 'Fort',
-    mode: 'metro', modeLabel: 'Train → Walk → Bus',
-    date: 'March 26, 2026', time: '08:00 AM',
-    duration: 62, cost: 38, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j09', from: 'Fort', to: 'Bandra',
-    mode: 'auto', modeLabel: 'Walk → Auto',
-    date: 'March 26, 2026', time: '03:30 PM',
-    duration: 35, cost: 95, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j10', from: 'Bandra', to: 'Thane',
-    mode: 'metro', modeLabel: 'Metro → Train',
-    date: 'March 26, 2026', time: '08:10 PM',
-    duration: 55, cost: 32, status: 'on-time', rerouted: false,
-  },
-  // ── Mar 25 (Tue) ──
-  {
-    id: 'j11', from: 'Ghatkopar', to: 'Churchgate',
-    mode: 'metro', modeLabel: 'Metro → Train → Walk',
-    date: 'March 25, 2026', time: '07:55 AM',
-    duration: 44, cost: 28, status: 'delayed', rerouted: true,
-  },
-  {
-    id: 'j12', from: 'Churchgate', to: 'Ghatkopar',
-    mode: 'metro', modeLabel: 'Walk → Train → Metro',
-    date: 'March 25, 2026', time: '06:20 PM',
-    duration: 46, cost: 28, status: 'on-time', rerouted: false,
-  },
-  // ── Mar 24 (Mon) ──
-  {
-    id: 'j13', from: 'Vasai', to: 'Dadar',
-    mode: 'metro', modeLabel: 'Walk → Train → Walk',
-    date: 'March 24, 2026', time: '08:20 AM',
-    duration: 66, cost: 32, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j14', from: 'Dadar', to: 'Vasai',
-    mode: 'metro', modeLabel: 'Walk → Train → Auto',
-    date: 'March 24, 2026', time: '07:00 PM',
-    duration: 70, cost: 72, status: 'disrupted', rerouted: true,
-  },
-  // ── Mar 21 (Fri) ──
-  {
-    id: 'j15', from: 'Mulund', to: 'CST',
-    mode: 'metro', modeLabel: 'Walk → Train → Walk',
-    date: 'March 21, 2026', time: '09:00 AM',
-    duration: 50, cost: 30, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j16', from: 'CST', to: 'Colaba',
-    mode: 'bus', modeLabel: 'Bus → Walk',
-    date: 'March 21, 2026', time: '12:30 PM',
-    duration: 22, cost: 8, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j17', from: 'Colaba', to: 'Mulund',
-    mode: 'metro', modeLabel: 'Bus → Train → Walk',
-    date: 'March 21, 2026', time: '06:00 PM',
-    duration: 68, cost: 38, status: 'on-time', rerouted: false,
-  },
-  // ── Mar 20 (Thu) ──
-  {
-    id: 'j18', from: 'Kandivali', to: 'Grant Road',
-    mode: 'metro', modeLabel: 'Walk → Train → Walk',
-    date: 'March 20, 2026', time: '08:45 AM',
-    duration: 40, cost: 25, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j19', from: 'Grant Road', to: 'Kandivali',
-    mode: 'bus', modeLabel: 'Bus → Train → Walk',
-    date: 'March 20, 2026', time: '07:30 PM',
-    duration: 55, cost: 18, status: 'delayed', rerouted: false,
-  },
-  // ── Mar 19 (Wed) ──
-  {
-    id: 'j20', from: 'Andheri', to: 'Churchgate',
-    mode: 'metro', modeLabel: 'Metro → Train → Walk',
-    date: 'March 19, 2026', time: '08:05 AM',
-    duration: 38, cost: 26, status: 'on-time', rerouted: false,
-  },
-  // ── Mar 14 (Sat) ──
-  {
-    id: 'j21', from: 'Borivali', to: 'Marine Lines',
-    mode: 'auto', modeLabel: 'Auto → Walk',
-    date: 'March 14, 2026', time: '10:30 AM',
-    duration: 85, cost: 180, status: 'on-time', rerouted: false,
-  },
-  // ── Mar 10 (Tue) ──
-  {
-    id: 'j22', from: 'Thane', to: 'Bandra',
-    mode: 'bus', modeLabel: 'Train → Bus → Walk',
-    date: 'March 10, 2026', time: '09:00 AM',
-    duration: 70, cost: 22, status: 'disrupted', rerouted: true,
-  },
-  // ── Mar 5 (Thu) ──
-  {
-    id: 'j23', from: 'Virar', to: 'Churchgate',
-    mode: 'metro', modeLabel: 'Walk → Train → Walk',
-    date: 'March 5, 2026', time: '07:30 AM',
-    duration: 90, cost: 40, status: 'on-time', rerouted: false,
-  },
-  {
-    id: 'j24', from: 'Churchgate', to: 'Virar',
-    mode: 'metro', modeLabel: 'Walk → Train → Auto',
-    date: 'March 5, 2026', time: '07:50 PM',
-    duration: 98, cost: 90, status: 'delayed', rerouted: false,
-  },
+  { id: 'j01', from: 'Vasai', to: 'Churchgate', mode: 'metro', modeLabel: 'Walk → Train → Walk', routeType: 'fastest', date: 'March 31, 2026', time: '08:10 AM', duration: 74, cost: 35, timeSaved: 8, costSaved: 45, status: 'on-time' },
+  { id: 'j02', from: 'Churchgate', to: 'Vasai', mode: 'metro', modeLabel: 'Walk → Train → Walk', routeType: 'cheapest', date: 'March 31, 2026', time: '07:05 PM', duration: 80, cost: 35, timeSaved: 0, costSaved: 20, status: 'delayed' },
+  { id: 'j03', from: 'Andheri', to: 'Nariman Point', mode: 'metro', modeLabel: 'Metro → Walk → Bus', routeType: 'fastest', date: 'March 28, 2026', time: '09:15 AM', duration: 52, cost: 42, timeSaved: 12, costSaved: 0, status: 'on-time' },
+  { id: 'j04', from: 'Nariman Point', to: 'Andheri', mode: 'bus', modeLabel: 'Bus → Metro', routeType: 'cheapest', date: 'March 28, 2026', time: '06:50 PM', duration: 65, cost: 22, timeSaved: 0, costSaved: 30, status: 'delayed' },
+  { id: 'j05', from: 'Borivali', to: 'Churchgate', mode: 'metro', modeLabel: 'Walk → Train → Walk', routeType: 'fastest', date: 'March 27, 2026', time: '08:30 AM', duration: 58, cost: 30, timeSaved: 6, costSaved: 0, status: 'on-time' },
+  { id: 'j06', from: 'Churchgate', to: 'Dadar', mode: 'metro', modeLabel: 'Train → Walk', routeType: 'comfort', date: 'March 27, 2026', time: '01:15 PM', duration: 18, cost: 10, timeSaved: 2, costSaved: 5, status: 'on-time' },
+  { id: 'j07', from: 'Dadar', to: 'Borivali', mode: 'bus', modeLabel: 'Bus → Walk', routeType: 'cheapest', date: 'March 27, 2026', time: '07:40 PM', duration: 45, cost: 15, timeSaved: 0, costSaved: 25, status: 'disrupted', rerouted: true },
+  { id: 'j08', from: 'Thane', to: 'Fort', mode: 'metro', modeLabel: 'Train → Walk → Bus', routeType: 'fastest', date: 'March 26, 2026', time: '08:00 AM', duration: 62, cost: 38, timeSaved: 9, costSaved: 0, status: 'on-time' },
+  { id: 'j09', from: 'Fort', to: 'Bandra', mode: 'auto', modeLabel: 'Walk → Auto', routeType: 'comfort', date: 'March 26, 2026', time: '03:30 PM', duration: 35, cost: 95, timeSaved: 5, costSaved: 0, status: 'on-time' },
+  { id: 'j10', from: 'Bandra', to: 'Thane', mode: 'metro', modeLabel: 'Metro → Train', routeType: 'fastest', date: 'March 26, 2026', time: '08:10 PM', duration: 55, cost: 32, timeSaved: 7, costSaved: 10, status: 'on-time' },
+  { id: 'j11', from: 'Ghatkopar', to: 'Churchgate', mode: 'metro', modeLabel: 'Metro → Train → Walk', routeType: 'fastest', date: 'March 25, 2026', time: '07:55 AM', duration: 44, cost: 28, timeSaved: 11, costSaved: 0, status: 'delayed', rerouted: true },
+  { id: 'j12', from: 'Churchgate', to: 'Ghatkopar', mode: 'metro', modeLabel: 'Walk → Train → Metro', routeType: 'cheapest', date: 'March 25, 2026', time: '06:20 PM', duration: 46, cost: 28, timeSaved: 0, costSaved: 15, status: 'on-time' },
+  { id: 'j13', from: 'Vasai', to: 'Dadar', mode: 'metro', modeLabel: 'Walk → Train → Walk', routeType: 'fastest', date: 'March 24, 2026', time: '08:20 AM', duration: 66, cost: 32, timeSaved: 5, costSaved: 0, status: 'on-time' },
+  { id: 'j14', from: 'Dadar', to: 'Vasai', mode: 'metro', modeLabel: 'Walk → Train → Auto', routeType: 'comfort', date: 'March 24, 2026', time: '07:00 PM', duration: 70, cost: 72, timeSaved: 0, costSaved: 0, status: 'disrupted', rerouted: true },
 ];
 
-// ── Weekly bar chart — week of Mar 23–29, 2026 ────────────────────────────
-// mode drives bar colour (dominant mode for that day)
 const weeklyTrips = [
   { day: 'Mon', trips: 2, mode: 'metro' },
   { day: 'Tue', trips: 2, mode: 'metro' },
-  { day: 'Wed', trips: 2, mode: 'metro' },
+  { day: 'Wed', trips: 3, mode: 'metro' },
   { day: 'Thu', trips: 3, mode: 'metro' },
   { day: 'Fri', trips: 3, mode: 'bus' },
   { day: 'Sat', trips: 0, mode: 'walk' },
   { day: 'Sun', trips: 1, mode: 'bus' },
 ];
 
-// ── 30-day commute trend — realistic Mumbai commute times (mins) ───────────
 const trendData = [
   { day: 1, time: 74 }, { day: 2, time: 38 }, { day: 3, time: 70 },
   { day: 4, time: 66 }, { day: 5, time: 90 }, { day: 6, time: 85 },
@@ -636,518 +74,484 @@ const trendData = [
   { day: 28, time: 52 }, { day: 29, time: 30 }, { day: 30, time: 80 },
 ];
 
-// ── Pie chart — cost breakdown by mode ───────────────────────────────────
 const costData = [
   { name: 'Metro', value: 569, color: '#3B82F6' },
-  { name: 'Bus', value: 183, color: '#FACC15' },
+  { name: 'Bus', value: 183, color: '#f59e0b' },
   { name: 'Auto', value: 275, color: '#22C55E' },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ANIMATION VARIANTS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
-const fadeUp = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+const MODE_CONFIG: Record<TransitMode, { icon: any; bg: string; border: string; text: string; barColor: string }> = {
+  metro: { icon: Train, bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', barColor: '#3B82F6' },
+  bus: { icon: Bus, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', barColor: '#f59e0b' },
+  auto: { icon: Car, bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', barColor: '#22C55E' },
+  walk: { icon: Footprints, bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-500', barColor: '#A1A1AA' },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-const statusColors: Record<string, string> = {
-  'on-time': 'bg-fc-success',
-  delayed: 'bg-fc-warning',
-  disrupted: 'bg-fc-danger',
+const STATUS_CONFIG: Record<JourneyStatus, { icon: any; label: string; bg: string; text: string; border: string; dot: string }> = {
+  'on-time': { icon: CheckCircle2, label: 'On Time', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+  delayed: { icon: AlertCircle, label: 'Delayed', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', dot: 'bg-amber-500' },
+  disrupted: { icon: AlertTriangle, label: 'Disrupted', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', dot: 'bg-red-500' },
 };
 
-const modeBarColors: Record<string, string> = {
-  metro: '#3B82F6',
-  bus: '#FACC15',
-  walk: '#A1A1AA',
-  auto: '#22C55E',
+const ROUTE_TYPE_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
+  fastest: { label: 'Fastest', bg: 'bg-[#1b3a2a]', text: 'text-white' },
+  cheapest: { label: 'Cheapest', bg: 'bg-blue-600', text: 'text-white' },
+  comfort: { label: 'Comfort', bg: 'bg-orange-500', text: 'text-white' },
 };
 
 const filterConfig = [
-  { id: 'ALL', icon: null, label: 'ALL' },
-  { id: 'METRO', icon: Train, label: 'METRO' },
-  { id: 'BUS', icon: Bus, label: 'BUS' },
-  { id: 'AUTO', icon: Car, label: 'AUTO' },
-  { id: 'DISRUPTED', icon: AlertTriangle, label: 'DISRUPTED' },
-  { id: 'THIS_WEEK', icon: Calendar, label: 'THIS WEEK' },
+  { id: 'ALL', icon: null, label: 'All' },
+  { id: 'METRO', icon: Train, label: 'Metro' },
+  { id: 'BUS', icon: Bus, label: 'Bus' },
+  { id: 'AUTO', icon: Car, label: 'Auto' },
+  { id: 'DISRUPTED', icon: AlertTriangle, label: 'Disrupted' },
+  { id: 'THIS_WEEK', icon: Calendar, label: 'This Week' },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NUMBER COUNTER HOOK
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Animations ───────────────────────────────────────────────────────────────
 
-function useNumberCounter(target: number, duration = 1.5) {
-  const [display, setDisplay] = useState(0);
-  const [done, setDone] = useState(false);
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+const fadeUp = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' as const } },
+};
 
+// ─── Counter Hook ─────────────────────────────────────────────────────────────
+
+function useCounter(target: number, duration = 1.5) {
+  const [val, setVal] = useState(0);
   useEffect(() => {
-    if (done) return;
-    const startTime = performance.now();
-
-    const animate = (now: number) => {
-      const progress = Math.min((now - startTime) / 1000 / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
-      setDisplay(Math.round(ease * target));
-      if (progress < 1) requestAnimationFrame(animate);
-      else setDone(true);
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / (duration * 1000), 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      setVal(Math.round(ease * target));
+      if (p < 1) requestAnimationFrame(tick);
     };
-
-    requestAnimationFrame(animate);
-  }, [target, duration, done]);
-
-  return display;
+    const id = setTimeout(() => requestAnimationFrame(tick), 400);
+    return () => clearTimeout(id);
+  }, [target, duration]);
+  return val;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CALENDAR HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Calendar Helpers ─────────────────────────────────────────────────────────
 
-// Returns true if any journey in the list falls on this calendar date
-function hasJourneyOn(year: number, month: number, day: number): boolean {
-  return journeyHistory.some((j) => {
+function hasJourneyOn(year: number, month: number, day: number) {
+  return journeyHistory.some(j => {
     const d = new Date(j.date);
-    return (
-      d.getFullYear() === year &&
-      d.getMonth() === month &&   // 0-indexed
-      d.getDate() === day
-    );
+    return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
   });
 }
 
-function hasDisruptionOn(year: number, month: number, day: number): boolean {
-  return journeyHistory.some((j) => {
+function hasDisruptionOn(year: number, month: number, day: number) {
+  return journeyHistory.some(j => {
     const d = new Date(j.date);
-    return (
-      d.getFullYear() === year &&
-      d.getMonth() === month &&
-      d.getDate() === day &&
-      (j.status === 'disrupted' || j.status === 'delayed')
-    );
+    return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day &&
+      (j.status === 'disrupted' || j.status === 'delayed');
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MINI CALENDAR COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Mini Calendar ────────────────────────────────────────────────────────────
 
-interface MiniCalendarProps {
-  year: number;
-  month: number; // 0-indexed
-}
-
-function MiniCalendar({ year, month }: MiniCalendarProps) {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
+function MiniCalendar({ year, month }: { year: number; month: number }) {
   const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-  // First weekday of the month (0 = Sun)
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const cells: (number | null)[] = [
     ...Array(firstDay).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
   return (
-    <div>
-      <div className="grid grid-cols-7 gap-y-1 gap-x-0.5">
-        {dayLabels.map((d, i) => (
+    <div className="grid grid-cols-7 gap-y-1">
+      {dayLabels.map((d, i) => (
+        <div key={i} className="text-center text-[9px] font-bold text-gray-400 pb-1">{d}</div>
+      ))}
+      {cells.map((day, i) => {
+        if (!day) return <div key={`e-${i}`} />;
+        const hasJ = hasJourneyOn(year, month, day);
+        const hasD = hasDisruptionOn(year, month, day);
+        return (
           <div
-            key={i}
-            className="text-center font-mono-label text-[9px] text-text-muted-fc pb-1"
+            key={day}
+            className={`relative flex items-center justify-center w-full aspect-square text-[10px] font-semibold rounded-md ${
+              hasJ ? (hasD ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') : 'text-gray-400'
+            }`}
           >
-            {d}
+            {day}
+            {hasJ && (
+              <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${hasD ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+            )}
           </div>
-        ))}
-        {cells.map((day, i) => {
-          if (!day) return <div key={`empty-${i}`} />;
-          const hasJourney = hasJourneyOn(year, month, day);
-          const hasDisruption = hasDisruptionOn(year, month, day);
-
-          return (
-            <div
-              key={day}
-              className={`
-                relative flex items-center justify-center
-                w-full aspect-square text-[10px] font-mono-label
-                ${hasJourney
-                  ? hasDisruption
-                    ? 'bg-fc-warning/20 text-fc-warning font-bold'
-                    : 'bg-fc-accent/15 text-fc-accent font-bold'
-                  : 'text-text-muted-fc'
-                }
-              `}
-            >
-              {day}
-              {hasJourney && (
-                <span
-                  className={`
-                    absolute bottom-0.5 left-1/2 -translate-x-1/2
-                    w-1 h-1 rounded-full
-                    ${hasDisruption ? 'bg-fc-warning' : 'bg-fc-accent'}
-                  `}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+        );
+      })}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const HistoryScreen = () => {
   const [activeFilter, setActiveFilter] = useState('ALL');
-  const [calendarMonth, setCalendarMonth] = useState(2);  // 0-indexed; 2 = March
+  const [calendarMonth, setCalendarMonth] = useState(2);
   const [calendarYear, setCalendarYear] = useState(2026);
 
-  // Animated stat counters
-  const totalTrips = useNumberCounter(32, 1.8);
-  const totalCost = useNumberCounter(840, 1.8);
-  const totalTimeSaved = useNumberCounter(4, 1.8); // displayed as integer hrs
+  const totalTrips = useCounter(32, 1.8);
+  const totalCost = useCounter(840, 1.8);
+  const totalTimeSaved = useCounter(4, 1.8);
 
-  // ── Filtered journey list ─────────────────────────────────────────────────
-  const filteredJourneys = journeyHistory.filter((j) => {
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const prevMonth = () => { if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); };
+  const nextMonth = () => { if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear(y => y + 1); } else setCalendarMonth(m => m + 1); };
+
+  const filteredJourneys = journeyHistory.filter(j => {
     if (activeFilter === 'ALL') return true;
     if (activeFilter === 'DISRUPTED') return j.status === 'disrupted';
     if (activeFilter === 'THIS_WEEK') {
-      const weekAgo = new Date('March 25, 2026'); // anchored to our dataset
+      const weekAgo = new Date('March 25, 2026');
       return new Date(j.date) >= weekAgo;
     }
-    const modeKey = activeFilter.toLowerCase() as TransitMode;
-    return j.mode === modeKey;
+    return j.mode === activeFilter.toLowerCase();
   });
 
-  // ── Calendar navigation ───────────────────────────────────────────────────
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
-
-  const prevMonth = () => {
-    if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); }
-    else setCalendarMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear(y => y + 1); }
-    else setCalendarMonth(m => m + 1);
-  };
-
-  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <motion.div
-      variants={stagger}
-      initial="hidden"
-      animate="show"
-      className="w-full max-w-[1200px] mx-auto pb-10"
-    >
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+    <motion.div variants={stagger} initial="hidden" animate="show" className="w-full max-w-[1200px] mx-auto pb-10">
+
+      {/* Header */}
       <motion.div variants={fadeUp} className="mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">
-          Journey History
-        </h1>
-        <p className="text-gray-500 font-medium">
-          Track your commutes and analyze your travel patterns
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">Journey History</h1>
+        <p className="text-gray-500 font-medium">Track your commutes and analyze your travel patterns</p>
       </motion.div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            LEFT COLUMN — Monthly summary + filter + journey list
-           ═══════════════════════════════════════════════════════════════════ */}
+        {/* ═══ LEFT COLUMN ═══ */}
         <div className="space-y-6">
 
-          {/* Monthly Summary card */}
-          <motion.div
-            variants={fadeUp}
-            className="bg-white border-[3px] border-border-hard p-6 rounded-[28px] shadow-sm"
-            style={{ boxShadow: '6px 6px 0px hsl(var(--shadow-color))' }}
-          >
-            {/* Calendar header with navigation */}
-            <div className="flex items-center justify-between mb-6">
+          {/* Monthly Summary Card */}
+          <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100">
+
+            {/* Calendar Nav */}
+            <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <button
                   onClick={prevMonth}
-                  className="w-8 h-8 border-2 border-border-hard flex items-center justify-center brutal-btn bg-bg-inset"
+                  className="w-8 h-8 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors"
                 >
-                  <ChevronLeft size={16} strokeWidth={2.5} />
+                  <ChevronLeft size={15} strokeWidth={2.5} className="text-gray-600" />
                 </button>
-                <h3 className="font-display text-lg font-bold uppercase text-text-primary">
-                  {monthNames[calendarMonth].toUpperCase()} {calendarYear}
+                <h3 className="font-bold text-base text-gray-900 min-w-[160px] text-center">
+                  {monthNames[calendarMonth]} {calendarYear}
                 </h3>
                 <button
                   onClick={nextMonth}
-                  className="w-8 h-8 border-2 border-border-hard flex items-center justify-center brutal-btn bg-bg-inset"
+                  className="w-8 h-8 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors"
                 >
-                  <ChevronRight size={16} strokeWidth={2.5} />
+                  <ChevronRight size={15} strokeWidth={2.5} className="text-gray-600" />
                 </button>
               </div>
-              <span className="brutal-chip bg-bg-inset border-2 border-border-hard text-[10px] text-text-muted-fc">
-                THIS MONTH
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-xl">
+                This Month
               </span>
             </div>
 
             {/* Stat counters */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="text-center">
-                <div className="font-display text-[32px] font-extrabold text-text-primary tabular-nums">
-                  {totalTrips}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {[
+                { value: totalTrips, label: 'Trips', icon: Route, color: 'text-gray-900', iconBg: 'bg-gray-100', iconColor: 'text-gray-500' },
+                { value: `₹${totalCost}`, label: 'Spent', icon: Wallet, color: 'text-amber-600', iconBg: 'bg-amber-50', iconColor: 'text-amber-500' },
+                { value: `${totalTimeSaved}h`, label: 'Saved', icon: TrendingDown, color: 'text-emerald-600', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-500' },
+              ].map((s, i) => (
+                <div key={i} className="bg-gray-50 rounded-2xl p-4">
+                  <div className={`w-8 h-8 rounded-xl ${s.iconBg} flex items-center justify-center mb-2`}>
+                    <s.icon size={15} className={s.iconColor} strokeWidth={2.5} />
+                  </div>
+                  <p className={`text-2xl font-bold ${s.color} tabular-nums`}>{s.value}</p>
+                  <p className="text-[10px] font-medium text-gray-400 mt-0.5 uppercase tracking-wider">{s.label}</p>
                 </div>
-                <p className="font-mono-label text-[10px] text-text-muted-fc">TRIPS</p>
-              </div>
-              <div className="text-center">
-                <div className="font-display text-[32px] font-extrabold text-fc-warning tabular-nums">
-                  {totalCost}
-                </div>
-                <p className="font-mono-label text-[10px] text-text-muted-fc">SPENT (₹)</p>
-              </div>
-              <div className="text-center">
-                <div className="font-display text-[32px] font-extrabold text-fc-success tabular-nums">
-                  {totalTimeSaved}
-                </div>
-                <p className="font-mono-label text-[10px] text-text-muted-fc">HRS SAVED</p>
-              </div>
+              ))}
             </div>
 
-            {/* Mini calendar — driven by calendarMonth / calendarYear */}
-            <div className="bg-bg-base border-2 border-border-hard p-3 rounded-[4px] mb-4">
+            {/* Mini Calendar */}
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 mb-4">
               <MiniCalendar year={calendarYear} month={calendarMonth} />
-              <div className="flex gap-4 mt-3 pt-2 border-t border-border-hard/30">
-                <span className="font-mono-label text-[9px] text-text-muted-fc flex items-center gap-1">
-                  <span className="inline-block w-2 h-2 rounded-full bg-fc-accent" />
+              <div className="flex gap-4 mt-3 pt-2 border-t border-gray-200/60">
+                <span className="text-[9px] font-medium text-gray-400 flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
                   Journey day
                 </span>
-                <span className="font-mono-label text-[9px] text-text-muted-fc flex items-center gap-1">
-                  <span className="inline-block w-2 h-2 rounded-full bg-fc-warning" />
+                <span className="text-[9px] font-medium text-gray-400 flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
                   Delay / disruption
                 </span>
               </div>
             </div>
 
-            {/* Weekly Trips Bar Chart */}
-            <div className="h-[160px] bg-bg-base border-2 border-border-hard p-2 rounded-[4px]">
+            {/* Weekly Bar Chart */}
+            <div className="h-[140px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyTrips}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 16%)" />
-                  <XAxis
-                    dataKey="day"
-                    tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: '#52525B' }}
+                <BarChart data={weeklyTrips} barSize={24}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} domain={[0, 6]} width={20} />
+                  <Tooltip
+                    contentStyle={{ background: '#1b3a2a', border: 'none', borderRadius: 12, color: 'white', fontSize: 11 }}
+                    cursor={{ fill: '#f8fafc' }}
                   />
-                  <YAxis
-                    tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: '#52525B' }}
-                    domain={[0, 6]}
-                  />
-                  <Bar dataKey="trips" radius={0} stroke="none" animationDuration={800}>
-                    {weeklyTrips.map((entry, index) => (
-                      <Cell
-                        key={index}
-                        fill={modeBarColors[entry.mode] || '#3B82F6'}
-                        animationDuration={800}
-                      />
+                  <Bar dataKey="trips" radius={[6, 6, 0, 0]} animationDuration={800}>
+                    {weeklyTrips.map((entry, i) => (
+                      <Cell key={i} fill={MODE_CONFIG[entry.mode as TransitMode]?.barColor || '#3B82F6'} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Mode share bar */}
-            <div className="mt-4 flex gap-[3px] w-full h-[10px]">
-              <div className="bg-fc-metro h-full" style={{ width: '60%' }} />
-              <div className="bg-fc-bus   h-full" style={{ width: '30%' }} />
-              <div className="bg-fc-walk  h-full" style={{ width: '10%' }} />
-            </div>
-            <div className="flex gap-4 mt-1">
-              <span className="font-mono-label text-[10px] text-text-muted-fc">🚇 60%</span>
-              <span className="font-mono-label text-[10px] text-text-muted-fc">🚌 30%</span>
-              <span className="font-mono-label text-[10px] text-text-muted-fc">🚶 10%</span>
+            {/* Mode share strip */}
+            <div className="mt-4">
+              <div className="flex gap-0.5 w-full h-2 rounded-full overflow-hidden">
+                <div className="bg-blue-500 h-full" style={{ width: '60%' }} />
+                <div className="bg-amber-500 h-full" style={{ width: '30%' }} />
+                <div className="bg-gray-400 h-full" style={{ width: '10%' }} />
+              </div>
+              <div className="flex gap-4 mt-2">
+                <span className="text-[10px] font-medium text-gray-500">🚇 Metro 60%</span>
+                <span className="text-[10px] font-medium text-gray-500">🚌 Bus 30%</span>
+                <span className="text-[10px] font-medium text-gray-500">🚶 Walk 10%</span>
+              </div>
             </div>
           </motion.div>
 
-          {/* Filter chips */}
-          <motion.div variants={fadeUp} className="flex gap-2 overflow-x-auto hide-scrollbar">
-            {filterConfig.map((f) => (
+          {/* Filter Chips */}
+          <motion.div variants={fadeUp} className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+            {filterConfig.map(f => (
               <button
                 key={f.id}
                 onClick={() => setActiveFilter(f.id)}
-                className={`brutal-chip flex-shrink-0 ${activeFilter === f.id
-                    ? 'border-fc-accent bg-fc-accent/10 text-fc-accent'
-                    : 'border-border-hard bg-bg-inset text-text-muted-fc'
-                  }`}
+                className={`flex items-center gap-1.5 flex-shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold transition-all border ${
+                  activeFilter === f.id
+                    ? 'bg-[#1b3a2a] text-white border-[#1b3a2a] shadow-sm'
+                    : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                }`}
               >
-                {f.icon && <f.icon size={14} strokeWidth={2.5} className="mr-1.5" />}
-                <span className="font-bold text-[10px] uppercase tracking-wider">
-                  {f.label}
-                </span>
+                {f.icon && <f.icon size={12} strokeWidth={2.5} />}
+                {f.label}
               </button>
             ))}
           </motion.div>
 
-          {/* Journey list */}
+          {/* Journey List */}
           <motion.div variants={fadeUp} className="space-y-3">
             <AnimatePresence>
               {filteredJourneys.map((j, idx) => {
-                const ModeIcon = MODE_ICONS[j.mode];
+                const modeCfg = MODE_CONFIG[j.mode];
+                const statusCfg = STATUS_CONFIG[j.status];
+                const routeCfg = j.routeType ? ROUTE_TYPE_CONFIG[j.routeType] : null;
+                const ModeIcon = modeCfg.icon;
+                const StatusIcon = statusCfg.icon;
+
                 return (
                   <motion.div
                     key={j.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ delay: idx * 0.05, duration: 0.3 }}
-                    className="brutal-card p-4 flex items-center gap-4 cursor-pointer relative"
+                    exit={{ opacity: 0, y: 16 }}
+                    transition={{ delay: idx * 0.04, duration: 0.28 }}
+                    className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all cursor-pointer group"
                   >
-                    {/* Status dot */}
-                    <div
-                      className={`absolute top-2 right-2 w-2 h-2 rounded-full ${statusColors[j.status]}`}
-                    />
+                    <div className="flex items-start gap-3">
+                      {/* Mode icon */}
+                      <div className={`w-10 h-10 rounded-xl ${modeCfg.bg} border ${modeCfg.border} flex items-center justify-center flex-shrink-0`}>
+                        <ModeIcon size={16} className={modeCfg.text} strokeWidth={2.5} />
+                      </div>
 
-                    {/* Mode icon */}
-                    <div
-                      className={`w-10 h-10 border-2 flex items-center justify-center flex-shrink-0 ${MODE_BORDER_COLORS[j.mode]}`}
-                    >
-                      <ModeIcon size={18} strokeWidth={2.5} />
-                    </div>
+                      {/* Journey details */}
+                      <div className="flex-1 min-w-0">
+                        {/* Route: source → destination */}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <p className="font-bold text-sm text-gray-900 truncate">
+                            {j.from}
+                            <span className="text-gray-400 font-normal mx-1.5">→</span>
+                            {j.to}
+                          </p>
+                        </div>
 
-                    {/* Journey details */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-body text-sm font-semibold text-text-primary truncate">
-                        {j.from} → {j.to}
-                      </p>
-                      <p className="font-mono-label text-[11px] text-text-muted-fc">
-                        {j.modeLabel}
-                      </p>
-                      <p className="font-mono-label text-[11px] text-text-muted-fc">
-                        {j.date}, {j.time}
-                      </p>
-                    </div>
+                        {/* Tags row */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Route Type */}
+                          {routeCfg && (
+                            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${routeCfg.bg} ${routeCfg.text}`}>
+                              {routeCfg.label}
+                            </span>
+                          )}
+                          {/* Mode label */}
+                          <span className="text-[10px] font-medium text-gray-400">{j.modeLabel}</span>
+                          {/* Rerouted badge */}
+                          {j.rerouted && (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-200">
+                              Rerouted
+                            </span>
+                          )}
+                        </div>
 
-                    {/* Right info */}
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-body text-sm font-bold text-text-primary tabular-nums">
-                        {j.duration} MIN
-                      </p>
-                      <p className="font-mono-label text-xs text-text-muted-fc">₹{j.cost}</p>
-                      {j.rerouted && (
-                        <span className="font-mono-label text-[9px] text-fc-warning uppercase">
-                          Rerouted
-                        </span>
-                      )}
+                        {/* Date & Time */}
+                        <p className="text-[10px] font-medium text-gray-400 mt-1.5">{j.date} · {j.time}</p>
+
+                        {/* Savings row */}
+                        {((j.timeSaved || 0) > 0 || (j.costSaved || 0) > 0) && (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {(j.timeSaved || 0) > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">
+                                <Clock size={9} />
+                                Saved {j.timeSaved} min
+                              </span>
+                            )}
+                            {(j.costSaved || 0) > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">
+                                <Wallet size={9} />
+                                Saved ₹{j.costSaved}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Duration, Cost, Status */}
+                      <div className="text-right flex-shrink-0 flex flex-col items-end gap-1.5">
+                        <div>
+                          <p className="font-bold text-sm text-gray-900 tabular-nums">{j.duration} min</p>
+                          <p className="text-xs font-semibold text-gray-500 tabular-nums">₹{j.cost}</p>
+                        </div>
+                        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg ${statusCfg.bg} ${statusCfg.border} border`}>
+                          <StatusIcon size={9} className={statusCfg.text} />
+                          <span className={`text-[9px] font-bold ${statusCfg.text}`}>{statusCfg.label}</span>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 );
               })}
             </AnimatePresence>
+
+            {filteredJourneys.length === 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+                <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                  <Route size={20} className="text-gray-300" />
+                </div>
+                <p className="font-semibold text-gray-500 text-sm">No journeys found</p>
+                <p className="text-xs text-gray-400 mt-1">Try changing the filter above</p>
+              </div>
+            )}
           </motion.div>
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            RIGHT COLUMN — Analytics (desktop only)
-           ═══════════════════════════════════════════════════════════════════ */}
-        <div className="hidden lg:block space-y-6 mt-0">
+        {/* ═══ RIGHT COLUMN ═══ */}
+        <div className="space-y-6">
 
-          {/* 30-day commute trend */}
-          <motion.div variants={fadeUp} className="brutal-card p-6">
-            <h3 className="font-display text-sm font-bold uppercase text-text-primary mb-4">
-              30-DAY COMMUTE TREND
-            </h3>
+          {/* 30-Day Trend Chart */}
+          <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-5">
+              <BarChart3 size={16} className="text-[#1b3a2a]" />
+              <h3 className="font-bold text-base text-gray-900">30-Day Commute Trend</h3>
+            </div>
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 16%)" />
-                  <XAxis
-                    dataKey="day"
-                    tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: '#52525B' }}
+                  <defs>
+                    <linearGradient id="commuteFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} interval={4} />
+                  <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} unit="m" domain={[0, 110]} width={30} />
+                  <Tooltip
+                    contentStyle={{ background: '#1b3a2a', border: 'none', borderRadius: 12, color: 'white', fontSize: 11 }}
+                    formatter={(v: any) => [`${v} min`, 'Duration']}
                   />
-                  <YAxis
-                    tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: '#52525B' }}
-                    unit=" m"
-                    domain={[0, 110]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="time"
-                    stroke="#3B82F6"
-                    fill="#3B82F6"
-                    fillOpacity={0.08}
-                    strokeWidth={2}
-                    animationDuration={1000}
-                  />
+                  <Area type="monotone" dataKey="time" stroke="#3B82F6" fill="url(#commuteFill)" strokeWidth={2} dot={false} animationDuration={1000} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
 
-          {/* Cost breakdown pie */}
-          <motion.div variants={fadeUp} className="brutal-card p-6">
-            <h3 className="font-display text-sm font-bold uppercase text-text-primary mb-4">
-              COST BREAKDOWN
-            </h3>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={costData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    strokeWidth={2}
-                    stroke="hsl(0 0% 8%)"
-                    animationDuration={1000}
-                  >
-                    {costData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} animationDuration={1000} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex gap-4 justify-center mt-2">
-              {costData.map((d) => (
-                <span key={d.name} className="font-mono-label text-[10px] text-text-muted-fc">
-                  <span
-                    className="inline-block w-2 h-2 mr-1 rounded-full"
-                    style={{ backgroundColor: d.color }}
-                  />
-                  {d.name} ₹{d.value}
-                </span>
-              ))}
+          {/* Cost Breakdown */}
+          <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100">
+            <h3 className="font-bold text-base text-gray-900 mb-5">Cost Breakdown</h3>
+            <div className="flex items-center gap-6">
+              <div className="h-[160px] flex-shrink-0" style={{ width: 160 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={costData}
+                      dataKey="value"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      strokeWidth={2}
+                      stroke="#fff"
+                      animationDuration={1000}
+                    >
+                      {costData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ background: '#1b3a2a', border: 'none', borderRadius: 12, color: 'white', fontSize: 11 }}
+                      formatter={(v: any) => [`₹${v}`, '']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 space-y-3">
+                {costData.map(d => (
+                  <div key={d.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }} />
+                      <span className="text-sm font-medium text-gray-700">{d.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900">₹{d.value}</p>
+                      <p className="text-[10px] text-gray-400">{Math.round(d.value / (569 + 183 + 275) * 100)}%</p>
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-500">Total Spent</span>
+                    <span className="text-sm font-bold text-gray-900">₹{569 + 183 + 275}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
 
           {/* Achievements */}
-          <motion.div variants={fadeUp} className="brutal-card p-6 space-y-3">
-            <h3 className="font-display text-sm font-bold uppercase text-text-primary mb-2">
-              ACHIEVEMENTS
-            </h3>
-            <p className="font-mono-label text-xs text-fc-warning">
-              🔥 7-DAY STREAK — PUBLIC TRANSIT EVERY WEEKDAY
-            </p>
-            <p className="font-mono-label text-xs text-fc-success">
-              🌱 8.2 KG CO₂ SAVED THIS MONTH
-            </p>
-            <p className="font-mono-label text-xs text-fc-accent">
-              ⚡ AVG COMMUTE: 26 MIN (4 MIN &lt; CITY AVG)
-            </p>
+          <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100">
+            <h3 className="font-bold text-base text-gray-900 mb-4">Insights & Achievements</h3>
+            <div className="space-y-3">
+              {[
+                { emoji: '🔥', title: '7-Day Streak', desc: 'Public transit every weekday', bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-700' },
+                { emoji: '🌱', title: '8.2 kg CO₂ Saved', desc: 'This month vs. driving', bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-700' },
+                { emoji: '⚡', title: 'Speed Demon', desc: 'Avg 26 min — 4 min < city avg', bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-700' },
+                { emoji: '🏆', title: 'Smart Commuter', desc: '78% AI recommendations accepted', bg: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-700' },
+              ].map((a, i) => (
+                <div key={i} className={`flex items-center gap-3 p-3 rounded-2xl ${a.bg} border ${a.border}`}>
+                  <span className="text-xl">{a.emoji}</span>
+                  <div>
+                    <p className={`text-sm font-bold ${a.text}`}>{a.title}</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">{a.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
-
       </div>
     </motion.div>
   );

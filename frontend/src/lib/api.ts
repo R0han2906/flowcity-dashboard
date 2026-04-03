@@ -1,27 +1,38 @@
 const BASE_URL = 'http://localhost:5000/api';
 
-// ─── Types from the backend ──────────────────────────────────────
-
-export interface BackendRouteStep {
-  mode: 'walk' | 'metro' | 'bus' | 'auto' | 'cab' | 'train';
-  icon: string;
-  label: string;
+export interface RouteResource {
+  type: 'walk' | 'metro' | 'bus' | 'train' | 'cab' | 'auto';
   duration: number;
-  distance: string;
+  label: string;
 }
 
 export interface BackendRoute {
   id: string;
-  label: string;
   type: 'fastest' | 'cheapest' | 'comfort';
-  totalTime: number;
+  label: string;
+  durationMin: number;
   estimatedCost: number;
   confidence: number;
   transfers: number;
-  lastMile: string | null;
-  steps: BackendRouteStep[];
-  requiresCab: boolean;
   tags: string[];
+  trafficLevel: "low" | "medium" | "high";
+  predictedDelay: number;
+  geometry: [number, number][];
+  distanceKm: number;
+  resources: RouteResource[];
+}
+
+export interface AIRecommendation {
+  routeId: string;
+  savedTime: number;
+  confidence: number;
+  explanation: string;
+  insights: {
+    timeSaved: number;
+    costSaved: number;
+    avoidedTraffic: boolean;
+    predictedDelay: number;
+  };
 }
 
 export interface RoutePlanResponse {
@@ -30,27 +41,9 @@ export interface RoutePlanResponse {
   distanceKm: number;
   generatedAt: string;
   routes: BackendRoute[];
+  recommended: AIRecommendation;
 }
 
-export interface RawRoute {
-  id: number;
-  type: string;
-  from: string;
-  to: string;
-  steps: any[];
-  delayFactor: number;
-  reliability: number;
-  confidence: number;
-}
-
-export interface DisruptionSimResponse {
-  alert: string;
-  routes: RawRoute[];
-}
-
-// ─── API helpers ─────────────────────────────────────────────────
-
-/** POST /api/route/plan */
 export async function planRoute(source: string, destination: string): Promise<RoutePlanResponse> {
   const res = await fetch(`${BASE_URL}/route/plan`, {
     method: 'POST',
@@ -58,23 +51,22 @@ export async function planRoute(source: string, destination: string): Promise<Ro
     body: JSON.stringify({ source, destination }),
   });
   if (!res.ok) throw new Error(`planRoute failed: ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  return data as RoutePlanResponse;
 }
 
-/** GET /api/routes */
-export async function getAllRoutes(): Promise<RawRoute[]> {
-  const res = await fetch(`${BASE_URL}/routes`);
-  if (!res.ok) throw new Error(`getAllRoutes failed: ${res.status}`);
-  return res.json();
-}
-
-/** POST /api/disruption/simulate */
-export async function simulateDisruption(delay: number): Promise<DisruptionSimResponse> {
+export async function simulateDisruption(delay: number): Promise<any> {
   const res = await fetch(`${BASE_URL}/disruption/simulate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ delay }),
   });
   if (!res.ok) throw new Error(`simulateDisruption failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getAllRoutes(): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/routes`);
+  if (!res.ok) throw new Error(`getAllRoutes failed: ${res.status}`);
   return res.json();
 }

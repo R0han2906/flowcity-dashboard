@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import SegmentBar from '@/components/SegmentBar';
 import { routeResults as mockRouteResults } from '@/lib/mock-data';
-import { planRoute, type BackendRoute } from '@/lib/api';
+import { planRoute, type BackendRoute, type AIRecommendation } from '@/lib/api';
 import type { RouteResult, RouteSegment } from '@/lib/types';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
@@ -30,17 +30,18 @@ const badgeConfig: Record<string, { bg: string; text: string; icon: any }> = {
   muted: { bg: 'bg-gray-100', text: 'text-gray-600', icon: Users },
 };
 
-const crowdConfig: Record<string, { color: string; bg: string }> = {
-  HIGH: { color: 'text-red-600', bg: 'bg-red-50' },
-  MODERATE: { color: 'text-amber-600', bg: 'bg-amber-50' },
-  LOW: { color: 'text-emerald-600', bg: 'bg-emerald-50' },
+const trafficConfig: Record<string, { color: string; bg: string; label: string }> = {
+  low: { color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'LOW' },
+  medium: { color: 'text-amber-600', bg: 'bg-amber-50', label: 'MEDIUM' },
+  high: { color: 'text-red-600', bg: 'bg-red-50', label: 'HIGH' },
 };
 
 // Map BackendRoute → RouteResult (for existing card UI)
-function adaptBackendRoute(r: BackendRoute, idx: number): RouteResult {
+function adaptBackendRoute(r: BackendRoute, idx: number, recommendation?: AIRecommendation | null): RouteResult {
   const badgeColorMap: Record<string, string> = { fastest: 'accent', cheapest: 'success', comfort: 'muted' };
   const modeMap: Record<string, any> = { metro: 'metro', bus: 'bus', auto: 'auto', walk: 'walk', cab: 'auto', train: 'metro' };
-  const crowdMap = ['HIGH', 'MODERATE', 'LOW'] as const;
+  const isRecommended = recommendation && r.id === recommendation.routeId;
+  const steps = r.steps || [];
   return {
     id: r.id,
     badge: r.label,
@@ -49,14 +50,20 @@ function adaptBackendRoute(r: BackendRoute, idx: number): RouteResult {
     to: '',
     totalTime: r.totalTime,
     cost: r.estimatedCost,
-    segments: r.steps.map((s) => ({
+    segments: steps.map((s) => ({
       mode: modeMap[s.mode] || 'walk',
       duration: s.duration,
       label: `${s.label} · ${s.duration}M`,
       detail: s.distance,
     } as RouteSegment)),
-    crowd: crowdMap[idx % 3],
-    confidence: r.confidence,
+    crowd: r.trafficLevel === 'high' ? 'HIGH' : r.trafficLevel === 'medium' ? 'MODERATE' : 'LOW',
+    confidence: isRecommended ? (recommendation?.confidence ?? r.confidence) : r.confidence,
+    isRecommended,
+    savedTime: isRecommended ? (recommendation?.savedTime ?? 0) : 0,
+    explanation: isRecommended ? (recommendation?.explanation ?? '') : '',
+    trafficLevel: r.trafficLevel,
+    predictedDelay: r.predictedDelay,
+    insights: isRecommended ? recommendation?.insights : undefined,
   };
 }
 
@@ -75,8 +82,9 @@ const PlannerScreen = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [liveRoutes, setLiveRoutes] = useState<RouteResult[] | null>(null);
   const [distKm, setDistKm] = useState<number | null>(null);
+  const [aiRecommendation, setAiRecommendation] = useState<AIRecommendation | null>(null);
 
-  const routeResults = liveRoutes ?? mockRouteResults;
+  const routeResults = (liveRoutes && liveRoutes.length > 0) ? liveRoutes : mockRouteResults;
 
   const handlePlan = async () => {
     const src = origin.trim();
@@ -85,13 +93,20 @@ const PlannerScreen = () => {
     setApiError(null);
     setApiLoading(true);
     try {
-      const data = await planRoute(src, dst);
-      setLiveRoutes(data.routes.map((r, i) => adaptBackendRoute(r, i)));
-      setDistKm(data.distanceKm);
+      const data = await planRoute(src, dst, { speed, cost, comfort });
+      console.log("PlannerScreen: API response", data);
+      const routes = data?.routes || [];
+      const recommended = data?.recommended || null;
+      console.log("PlannerScreen: routes", routes.length, "recommended", recommended?.routeId);
+      setLiveRoutes(routes.map((r, i) => adaptBackendRoute(r, i, recommended)));
+      setDistKm(data?.distanceKm || null);
+      setAiRecommendation(recommended);
       setExpandedRoute(null);
-    } catch {
+    } catch (err) {
+      console.error("PlannerScreen: handlePlan error", err);
       setApiError('Backend unavailable — showing demo data.');
       setLiveRoutes(null);
+      setAiRecommendation(null);
     } finally {
       setApiLoading(false);
     }
@@ -344,17 +359,22 @@ const PlannerScreen = () => {
           </motion.div>
 
           {/* Route Cards */}
-          {routeResults.map((route, idx) => {
-            const badge = badgeConfig[route.badgeColor];
+          {(routeResults || []).map((route, idx) => {
+            const badge = badgeConfig[route.badgeColor] || badgeConfig.muted;
             const BadgeIcon = badge.icon;
-            const crowd = crowdConfig[route.crowd] || crowdConfig.MODERATE;
+            const traffic = trafficConfig[route.trafficLevel || 'low'] || trafficConfig.low;
             const isExpanded = expandedRoute === route.id;
+            const isRecommended = route.isRecommended && liveRoutes;
+            const savedTime = route.savedTime;
+            const explanation = route.explanation;
+            const segments = route.segments || [];
+            const legs = (route as any).transfers !== undefined ? (route as any).transfers + 1 : segments.length;
 
             return (
               <motion.div
                 key={route.id}
                 variants={fadeUp}
-                className="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden"
+                className={`bg-white rounded-[28px] shadow-sm overflow-hidden ${isRecommended ? 'border-2 border-[#1b3a2a]' : 'border border-gray-100'}`}
               >
                 <div className="p-6">
                   {/* Badge + Time row */}
@@ -362,6 +382,11 @@ const PlannerScreen = () => {
                     <div className={`${badge.bg} ${badge.text} px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5`}>
                       <BadgeIcon size={12} strokeWidth={3} />
                       {route.badge}
+                      {isRecommended && (
+                        <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                          AI Pick
+                        </span>
+                      )}
                     </div>
                     <div className="text-right">
                       <div className="flex items-baseline gap-1">
@@ -376,8 +401,60 @@ const PlannerScreen = () => {
                     </div>
                   </div>
 
+                  {/* AI Explanation (only for recommended route) */}
+                  {isRecommended && explanation && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4 bg-[#f0f7f2] border border-[#1b3a2a]/10 rounded-xl px-4 py-3"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Sparkles size={14} className="text-[#1b3a2a] mt-0.5 shrink-0" />
+                        <p className="text-xs font-medium text-[#1b3a2a] leading-relaxed">
+                          {explanation}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Insight pills (only for recommended route) */}
+                  {isRecommended && liveRoutes && route.insights && (
+                    <div className="flex flex-wrap gap-2 mt-2 mb-3">
+                      {route.insights.timeSaved > 0 && (
+                        <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded-lg">
+                          ⚡ Saves {route.insights.timeSaved} min
+                        </span>
+                      )}
+                      {route.insights.avoidedTraffic && (
+                        <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-1 rounded-lg">
+                          🚦 Avoids heavy traffic
+                        </span>
+                      )}
+                      {route.insights.costSaved > 0 && (
+                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg">
+                          ₹{route.insights.costSaved} cheaper
+                        </span>
+                      )}
+                      {route.insights.predictedDelay > 0 && (
+                        <span className="text-[10px] font-bold bg-purple-50 text-purple-700 px-2 py-1 rounded-lg">
+                          +{route.insights.predictedDelay} min delay avoided
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Saved time badge (only for recommended route) */}
+                  {isRecommended && savedTime && savedTime > 0 && (
+                    <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 flex items-center gap-2">
+                      <Zap size={14} className="text-blue-600" />
+                      <span className="text-xs font-bold text-blue-700">
+                        Saves {savedTime} min vs slowest route
+                      </span>
+                    </div>
+                  )}
+
                   {/* Segment Bar */}
-                  <SegmentBar segments={route.segments} />
+                  <SegmentBar segments={segments} />
 
                   {/* Info chips row */}
                   <div className="flex items-center gap-2 mt-4 flex-wrap">
@@ -385,21 +462,22 @@ const PlannerScreen = () => {
                     <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 flex items-center gap-1.5">
                       <ArrowRight size={12} className="text-gray-400" />
                       <span className="text-[11px] font-bold text-gray-600">
-                        {route.segments.length} Legs
+                        {legs} Legs
                       </span>
                     </div>
 
-                    {/* Crowd */}
-                    <div className={`${crowd.bg} border ${route.crowd === 'HIGH' ? 'border-red-200' : route.crowd === 'LOW' ? 'border-emerald-200' : 'border-amber-200'
+                    {/* Traffic Level */}
+                    <div className={`${traffic.bg} border ${route.trafficLevel === 'high' ? 'border-red-200' : route.trafficLevel === 'low' ? 'border-emerald-200' : 'border-amber-200'
                       } rounded-xl px-3 py-1.5 flex items-center gap-1.5`}>
-                      <Users size={12} className={crowd.color} strokeWidth={2.5} />
-                      <span className={`text-[11px] font-bold ${crowd.color}`}>
-                        {route.crowd}
+                      <Users size={12} className={traffic.color} strokeWidth={2.5} />
+                      <span className={`text-[11px] font-bold ${traffic.color}`}>
+                        {traffic.label} Traffic
                       </span>
                     </div>
 
                     {/* Confidence */}
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 flex items-center gap-1.5">
+                    <div className={`rounded-xl px-3 py-1.5 flex items-center gap-1.5 border ${isRecommended ? 'bg-emerald-100 border-emerald-300' : 'bg-emerald-50 border-emerald-200'
+                      }`}>
                       <Shield size={12} className="text-emerald-600" strokeWidth={2.5} />
                       <span className="text-[11px] font-bold text-emerald-600 tabular-nums">
                         {route.confidence}%
@@ -443,7 +521,7 @@ const PlannerScreen = () => {
                     >
                       <div className="px-6 pb-6 pt-2 border-t border-gray-100">
                         <div className="bg-gray-50 rounded-2xl p-5">
-                          {route.segments.map((seg, i) => {
+                          {segments.map((seg, i) => {
                             const modeKey = seg.mode as keyof typeof modeConfig;
                             const cfg = modeConfig[modeKey] || modeConfig.walk;
                             const StepIcon = cfg.icon;
@@ -461,7 +539,7 @@ const PlannerScreen = () => {
                                   <div className={`w-8 h-8 rounded-xl ${cfg.bg} border ${cfg.border} flex items-center justify-center flex-shrink-0`}>
                                     <StepIcon size={14} className={cfg.color} strokeWidth={2.5} />
                                   </div>
-                                  {i < route.segments.length - 1 && (
+                                    {i < segments.length - 1 && (
                                     <div className="w-0.5 flex-1 bg-gray-200 my-1 min-h-[20px]" />
                                   )}
                                 </div>
@@ -509,7 +587,7 @@ const PlannerScreen = () => {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50">
-                      {['Route', 'Time', 'Cost', 'Legs', 'Crowd', 'Confidence'].map((h) => (
+                      {['Route', 'Time', 'Cost', 'Legs', 'Traffic', 'Confidence'].map((h) => (
                         <th
                           key={h}
                           className="px-4 py-3 text-left font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200"
@@ -520,8 +598,9 @@ const PlannerScreen = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {routeResults.map((r, i) => {
-                      const crd = crowdConfig[r.crowd] || crowdConfig.MODERATE;
+                    {(routeResults || []).map((r, i) => {
+                      const trf = trafficConfig[r.trafficLevel || 'low'] || trafficConfig.low;
+                      const legs = (r as any).transfers !== undefined ? (r as any).transfers + 1 : (r.segments || []).length;
                       return (
                         <tr
                           key={r.id}
@@ -538,10 +617,10 @@ const PlannerScreen = () => {
                             ₹{r.cost}
                           </td>
                           <td className="px-4 py-3 font-semibold text-gray-900 border-b border-gray-100">
-                            {r.segments.length}
+                            {legs}
                           </td>
-                          <td className={`px-4 py-3 font-bold border-b border-gray-100 ${crd.color}`}>
-                            {r.crowd}
+                          <td className={`px-4 py-3 font-bold border-b border-gray-100 ${trf.color}`}>
+                            {trf.label}
                           </td>
                           <td className="px-4 py-3 font-bold text-emerald-600 border-b border-gray-100 tabular-nums">
                             {r.confidence}%

@@ -20,4 +20,8 @@ app.get("/", (req, res) => {
   res.send("SmartCommute API Running 🚀");
 });
 
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Backend working" });
+});
+
 module.exports = app;

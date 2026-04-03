@@ -30,6 +30,17 @@ export interface RouteResult {
   segments: RouteSegment[];
   crowd: 'HIGH' | 'MODERATE' | 'LOW';
   confidence: number;
+  isRecommended?: boolean;
+  savedTime?: number;
+  explanation?: string;
+  trafficLevel?: "low" | "medium" | "high";
+  predictedDelay?: number;
+  insights?: {
+    timeSaved: number;
+    costSaved: number;
+    avoidedTraffic: boolean;
+    predictedDelay: number;
+  };
 }
 
 export interface Disruption {
