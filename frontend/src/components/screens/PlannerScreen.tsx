@@ -3,15 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Flag, ArrowUpDown, Zap, IndianRupee, Users,
   Train, Bus, Car, Footprints, Clock, ChevronDown,
-  ChevronRight, Shield, ArrowRight, Sparkles, Gauge
+  ChevronRight, Shield, ArrowRight, Sparkles, Gauge,
+  Search, Loader2
 } from 'lucide-react';
 import SegmentBar from '@/components/SegmentBar';
-import { routeResults } from '@/lib/mock-data';
+import { routeResults as mockRouteResults } from '@/lib/mock-data';
+import { planRoute, type BackendRoute } from '@/lib/api';
+import type { RouteResult, RouteSegment } from '@/lib/types';
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
 };
 
 const modeConfig = {
@@ -33,6 +36,30 @@ const crowdConfig: Record<string, { color: string; bg: string }> = {
   LOW: { color: 'text-emerald-600', bg: 'bg-emerald-50' },
 };
 
+// Map BackendRoute → RouteResult (for existing card UI)
+function adaptBackendRoute(r: BackendRoute, idx: number): RouteResult {
+  const badgeColorMap: Record<string, string> = { fastest: 'accent', cheapest: 'success', comfort: 'muted' };
+  const modeMap: Record<string, any> = { metro: 'metro', bus: 'bus', auto: 'auto', walk: 'walk', cab: 'auto', train: 'metro' };
+  const crowdMap = ['HIGH', 'MODERATE', 'LOW'] as const;
+  return {
+    id: r.id,
+    badge: r.label,
+    badgeColor: badgeColorMap[r.type] || 'muted',
+    from: '',
+    to: '',
+    totalTime: r.totalTime,
+    cost: r.estimatedCost,
+    segments: r.steps.map((s) => ({
+      mode: modeMap[s.mode] || 'walk',
+      duration: s.duration,
+      label: `${s.label} · ${s.duration}M`,
+      detail: s.distance,
+    } as RouteSegment)),
+    crowd: crowdMap[idx % 3],
+    confidence: r.confidence,
+  };
+}
+
 const PlannerScreen = () => {
   const [timeMode, setTimeMode] = useState<'now' | 'depart' | 'arrive'>('now');
   const [speed, setSpeed] = useState(70);
@@ -40,6 +67,35 @@ const PlannerScreen = () => {
   const [comfort, setComfort] = useState(30);
   const [modes, setModes] = useState({ metro: true, bus: true, auto: true, walk: true });
   const [expandedRoute, setExpandedRoute] = useState<string | null>(null);
+
+  // ── Backend integration ──
+  const [origin, setOrigin] = useState('Andheri Station');
+  const [dest, setDest] = useState('BKC, Mumbai');
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [liveRoutes, setLiveRoutes] = useState<RouteResult[] | null>(null);
+  const [distKm, setDistKm] = useState<number | null>(null);
+
+  const routeResults = liveRoutes ?? mockRouteResults;
+
+  const handlePlan = async () => {
+    const src = origin.trim();
+    const dst = dest.trim();
+    if (!src || !dst) return;
+    setApiError(null);
+    setApiLoading(true);
+    try {
+      const data = await planRoute(src, dst);
+      setLiveRoutes(data.routes.map((r, i) => adaptBackendRoute(r, i)));
+      setDistKm(data.distanceKm);
+      setExpandedRoute(null);
+    } catch {
+      setApiError('Backend unavailable — showing demo data.');
+      setLiveRoutes(null);
+    } finally {
+      setApiLoading(false);
+    }
+  };
 
   const highest =
     speed >= cost && speed >= comfort ? 'SPEED' : cost >= comfort ? 'COST' : 'COMFORT';
@@ -91,8 +147,11 @@ const PlannerScreen = () => {
                 <MapPin size={18} strokeWidth={2.5} className="text-blue-600" />
               </div>
               <input
+                id="planner-origin"
+                value={origin}
+                onChange={(e) => { setOrigin(e.target.value); setLiveRoutes(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && handlePlan()}
                 className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
-                defaultValue="Andheri Station"
                 placeholder="Enter origin..."
               />
             </div>
@@ -103,6 +162,7 @@ const PlannerScreen = () => {
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9, rotate: 180 }}
+                onClick={() => { const t = origin; setOrigin(dest); setDest(t); setLiveRoutes(null); }}
                 className="w-9 h-9 bg-white rounded-full border border-gray-200 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
               >
                 <ArrowUpDown size={15} strokeWidth={2.5} className="text-gray-500" />
@@ -115,8 +175,11 @@ const PlannerScreen = () => {
                 <Flag size={18} strokeWidth={2.5} className="text-red-500" />
               </div>
               <input
+                id="planner-destination"
+                value={dest}
+                onChange={(e) => { setDest(e.target.value); setLiveRoutes(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && handlePlan()}
                 className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
-                defaultValue="BKC, Mumbai"
                 placeholder="Enter destination..."
               />
             </div>
@@ -140,6 +203,25 @@ const PlannerScreen = () => {
                 );
               })}
             </div>
+
+            {/* API error */}
+            {apiError && (
+              <p className="mt-3 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                ⚠ {apiError}
+              </p>
+            )}
+
+            {/* Plan button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handlePlan}
+              disabled={apiLoading}
+              id="planner-search-btn"
+              className="w-full mt-5 py-3.5 bg-gradient-to-r from-[#1b3a2a] to-[#2c5f45] text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_8px_16px_rgba(27,58,42,0.2)] hover:shadow-[0_12px_20px_rgba(27,58,42,0.3)] transition-all disabled:opacity-60"
+            >
+              {apiLoading ? <><Loader2 size={18} className="animate-spin" /> Calculating…</> : <><Search size={18} /> Find Routes</>}
+            </motion.button>
           </motion.div>
 
           {/* ── Preferences Card ── */}
@@ -251,7 +333,9 @@ const PlannerScreen = () => {
             className="flex items-center justify-between"
           >
             <p className="text-sm font-medium text-gray-500">
-              <span className="font-bold text-gray-900">3</span> routes found
+              <span className="font-bold text-gray-900">{routeResults.length}</span> routes found
+              {distKm && liveRoutes && <span className="ml-2 text-gray-400">· ~{distKm} km</span>}
+              {!liveRoutes && <span className="ml-2 text-gray-400">(demo)</span>}
             </p>
             <button className="text-sm font-semibold text-[#3c7689] hover:underline flex items-center gap-1">
               Sort: Fastest
