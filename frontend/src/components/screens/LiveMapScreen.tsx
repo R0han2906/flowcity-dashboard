@@ -7,6 +7,56 @@ import {
   Loader2,
 } from 'lucide-react';
 import { planRoute, type BackendRoute, type BackendRouteStep } from '@/lib/api';
+import MapComponent, { type LatLng, type MapRoute } from '@/components/MapComponent';
+
+// ─── Nominatim geocoding ───────────────────────────────────────────
+async function geocodeLocation(query: string): Promise<LatLng> {
+  const q = encodeURIComponent(`${query}, Mumbai, India`);
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+  const data = await res.json();
+  if (!data.length) throw new Error(`Location not found: "${query}"`);
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+}
+
+// ─── Simulate 3 route polylines around two coords ─────────────────
+function buildRoutes(o: LatLng, d: LatLng): MapRoute[] {
+  const mid = { lat: (o.lat + d.lat) / 2, lng: (o.lng + d.lng) / 2 };
+  const latD = d.lat - o.lat;
+  const lngD = d.lng - o.lng;
+  return [
+    {
+      type: 'fastest',
+      color: '#22c55e',
+      positions: [
+        [o.lat, o.lng],
+        [mid.lat + latD * 0.12, mid.lng - lngD * 0.08],
+        [d.lat, d.lng],
+      ],
+    },
+    {
+      type: 'cheapest',
+      color: '#3b82f6',
+      positions: [
+        [o.lat, o.lng],
+        [mid.lat - latD * 0.10, mid.lng + lngD * 0.12],
+        [mid.lat - latD * 0.05, mid.lng - lngD * 0.05],
+        [d.lat, d.lng],
+      ],
+    },
+    {
+      type: 'comfort',
+      color: '#f97316',
+      positions: [
+        [o.lat, o.lng],
+        [o.lat + latD * 0.3, o.lng + lngD * 0.1],
+        [mid.lat + latD * 0.08, mid.lng + lngD * 0.15],
+        [d.lat - latD * 0.1, d.lng - lngD * 0.05],
+        [d.lat, d.lng],
+      ],
+    },
+  ];
+}
 
 const stagger: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 const fadeUp: Variants = {
@@ -181,78 +231,7 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
   );
 }
 
-// ─── Map placeholder (until Google Maps API is added) ─────────────
-function MapPlaceholder({ source, destination }: { source: string; destination: string }) {
-  const hasRoute = source && destination;
-  return (
-    <div className="w-full h-full min-h-[340px] bg-gradient-to-br from-[#e8f5e9] to-[#e3f2fd] rounded-[24px] border border-gray-200 relative overflow-hidden flex items-center justify-center">
-      {/* Grid pattern */}
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: 'linear-gradient(#b0bec5 1px, transparent 1px), linear-gradient(90deg, #b0bec5 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
 
-      {/* Decorative road lines */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-full h-2 bg-white/40 absolute rotate-12" />
-        <div className="w-full h-1.5 bg-white/30 absolute -rotate-6 top-1/3" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 text-center px-6">
-        {hasRoute ? (
-          <>
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md flex items-center gap-2">
-                <MapPin size={14} />
-                {source}
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-8 h-0.5 bg-gray-400" />
-                <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                <div className="w-8 h-0.5 bg-gray-400" />
-              </div>
-              <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md flex items-center gap-2">
-                <Flag size={14} />
-                {destination}
-              </div>
-            </div>
-            <p className="text-gray-500 text-sm font-medium">
-              Route visualized on map below
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              Add your Google Maps API key to enable live map view
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="w-16 h-16 rounded-full bg-white/70 flex items-center justify-center mx-auto mb-4 shadow-sm">
-              <Navigation size={28} className="text-[#1b3a2a]" />
-            </div>
-            <p className="text-gray-600 font-semibold text-sm">Enter origin & destination</p>
-            <p className="text-gray-400 text-xs mt-1">Route will appear here</p>
-            <p className="text-xs text-gray-300 mt-3 bg-white/50 rounded-xl px-3 py-1 inline-block">
-              Google Maps API key required for live map
-            </p>
-          </>
-        )}
-      </div>
-
-      {/* Corner pins */}
-      {hasRoute && (
-        <>
-          <div className="absolute top-6 left-8 w-3 h-3 rounded-full bg-blue-500 shadow-md border-2 border-white" />
-          <div className="absolute bottom-8 right-10 w-3 h-3 rounded-full bg-red-500 shadow-md border-2 border-white" />
-          <div className="absolute top-1/3 left-1/4 w-2 h-2 rounded-full bg-amber-400 shadow-sm border-2 border-white" />
-          <div className="absolute bottom-1/3 right-1/3 w-2 h-2 rounded-full bg-emerald-400 shadow-sm border-2 border-white" />
-        </>
-      )}
-    </div>
-  );
-}
 
 // ─── Main Screen ──────────────────────────────────────────────────
 const LiveMapScreen = () => {
@@ -261,6 +240,12 @@ const LiveMapScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ routes: BackendRoute[]; distanceKm: number } | null>(null);
+
+  // Map state
+  const [originCoords, setOriginCoords] = useState<LatLng | null>(null);
+  const [destCoords, setDestCoords] = useState<LatLng | null>(null);
+  const [mapRoutes, setMapRoutes] = useState<MapRoute[]>([]);
+  const [geoError, setGeoError] = useState<string | null>(null);
 
   const handleSwap = () => {
     setSource(destination);
@@ -276,15 +261,36 @@ const LiveMapScreen = () => {
       return;
     }
     setError(null);
+    setGeoError(null);
     setLoading(true);
-    try {
-      const data = await planRoute(src, dst);
-      setResult({ routes: data.routes, distanceKm: data.distanceKm });
-    } catch {
+
+    // Geocode & backend call in parallel
+    const [routeData, geoResult] = await Promise.allSettled([
+      planRoute(src, dst),
+      Promise.all([geocodeLocation(src), geocodeLocation(dst)]),
+    ]);
+
+    // Handle route results
+    if (routeData.status === 'fulfilled') {
+      setResult({ routes: routeData.value.routes, distanceKm: routeData.value.distanceKm });
+    } else {
       setError('Could not connect to the backend. Make sure the server is running on port 5000.');
-    } finally {
-      setLoading(false);
     }
+
+    // Handle geocoding results
+    if (geoResult.status === 'fulfilled') {
+      const [oCoords, dCoords] = geoResult.value;
+      setOriginCoords(oCoords);
+      setDestCoords(dCoords);
+      setMapRoutes(buildRoutes(oCoords, dCoords));
+    } else {
+      setGeoError('Could not find one or both locations on the map.');
+      setOriginCoords(null);
+      setDestCoords(null);
+      setMapRoutes([]);
+    }
+
+    setLoading(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -423,10 +429,26 @@ const LiveMapScreen = () => {
             RIGHT — Map + Results
            ══════════════════════════════ */}
         <div className="space-y-6">
-          {/* Map placeholder */}
-          <motion.div variants={fadeUp}>
-            <MapPlaceholder source={source} destination={destination} />
+          {/* Live Map (OpenStreetMap via React Leaflet) */}
+          <motion.div variants={fadeUp} className="w-full" style={{ height: 420 }}>
+            <MapComponent
+              originCoords={originCoords}
+              destCoords={destCoords}
+              routes={mapRoutes}
+            />
           </motion.div>
+
+          {/* Geocoding error toast */}
+          {geoError && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-2xl"
+            >
+              <AlertCircle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs font-medium text-amber-700">{geoError}</p>
+            </motion.div>
+          )}
 
           {/* Results */}
           <AnimatePresence mode="wait">
