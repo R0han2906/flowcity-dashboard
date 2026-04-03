@@ -108,20 +108,22 @@ const resourceConfig: Record<string, { icon: any; color: string; bg: string; bor
 };
 
 function ResourceFlow({ resources, compact }: { resources: RouteResource[]; compact?: boolean }) {
-  if (!resources || resources.length === 0) return <span className="text-[10px] text-gray-400">—</span>;
+  if (!resources || resources.length === 0) return <span className="text-xs text-gray-400">—</span>;
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="flex items-center gap-2 flex-wrap">
       {resources.map((res, i) => {
         const cfg = resourceConfig[res.type] || resourceConfig.walk;
         const Icon = cfg.icon;
         return (
-          <div key={i} className="flex items-center gap-1">
-            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg ${cfg.bg} border ${cfg.border}`}>
-              <Icon size={compact ? 9 : 11} className={cfg.color} strokeWidth={2.5} />
-              <span className={`text-[10px] font-bold ${cfg.color}`}>{res.duration}m</span>
+          <div key={i} className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl ${cfg.bg} border ${cfg.border}`}>
+              <Icon size={compact ? 12 : 14} className={cfg.color} strokeWidth={2} />
+              <span className={`text-xs font-semibold ${cfg.color}`}>{res.duration} min</span>
             </div>
             {i < resources.length - 1 && (
-              <span className="text-gray-300 text-[9px] font-bold">→</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-300 flex-shrink-0">
+                <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             )}
           </div>
         );
@@ -147,71 +149,60 @@ function RouteCard({
     <motion.div
       variants={fadeUp}
       onClick={onSelect}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ y: -2 }}
       whileTap={{ scale: 0.99 }}
-      className={`rounded-2xl p-5 border-2 cursor-pointer transition-all duration-200 ${
+      className={`rounded-2xl p-5 cursor-pointer transition-all duration-200 ${
         isSelected
-          ? 'border-[#1b3a2a] bg-[#f0f7f2] shadow-md'
-          : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
+          ? 'border-2 border-[#1b3a2a]/30 bg-white shadow-lg ring-1 ring-[#1b3a2a]/10'
+          : 'border border-gray-100 bg-white hover:border-gray-200 hover:shadow-md'
       }`}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className={`${cfg.bg} ${cfg.text} px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className={`${cfg.bg} ${cfg.text} px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5`}>
           <BadgeIcon size={12} strokeWidth={3} />
           {cfg.label}
         </div>
-        {isSelected && (
-          <CheckCircle2 size={16} className="text-[#1b3a2a]" />
-        )}
-      </div>
-
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-white rounded-xl p-3 border border-gray-100">
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-gray-900 tabular-nums">{route.durationMin}</span>
-            <span className="text-xs font-semibold text-gray-400">min</span>
-          </div>
-          <p className="text-[10px] text-gray-400 font-medium mt-0.5 uppercase tracking-wider">Total Time</p>
-        </div>
-        <div className="bg-white rounded-xl p-3 border border-gray-100">
-          <div className="flex items-baseline gap-1">
-            <span className="text-xl font-bold text-gray-900">₹{route.estimatedCost}</span>
-          </div>
-          <p className="text-[10px] text-gray-400 font-medium mt-0.5 uppercase tracking-wider">Est. Cost</p>
-        </div>
-        <div className="bg-white rounded-xl p-3 border border-gray-100">
-          <div className="flex items-baseline gap-1">
-            <span className="text-xl font-bold text-gray-900">{route.distanceKm}</span>
-            <span className="text-xs font-semibold text-gray-400">km</span>
-          </div>
-          <p className="text-[10px] text-gray-400 font-medium mt-0.5 uppercase tracking-wider">Distance</p>
-        </div>
-        <div className="bg-white rounded-xl p-3 border border-gray-100">
-          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg ${traffic.bg}`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${traffic.dot}`} />
-            <span className={`text-[10px] font-bold ${traffic.color}`}>{traffic.label}</span>
-          </div>
-          <p className="text-[10px] text-gray-400 font-medium mt-1.5 uppercase tracking-wider">Traffic</p>
+        <div className="flex items-center gap-3">
+          {route.predictedDelay > 0 && (
+            <div className="flex items-center gap-1">
+              <AlertTriangle size={11} className="text-amber-500" />
+              <span className="text-xs font-medium text-amber-600">+{route.predictedDelay} min</span>
+            </div>
+          )}
+          {isSelected && (
+            <CheckCircle2 size={16} className="text-[#1b3a2a]" />
+          )}
         </div>
       </div>
 
-      {/* Resource Flow */}
-      <div className="mb-4 p-3 bg-white rounded-xl border border-gray-100">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Transport Mix</p>
+      <div className="flex items-baseline gap-2 mb-1">
+        <span className="text-3xl font-bold text-gray-900 tabular-nums">{route.durationMin}</span>
+        <span className="text-sm font-medium text-gray-400">min</span>
+        <span className="ml-auto text-lg font-semibold text-gray-700">₹{route.estimatedCost}</span>
+      </div>
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-xs text-gray-400">{route.distanceKm} km</span>
+        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${traffic.bg}`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${traffic.dot}`} />
+          <span className={`text-[10px] font-semibold ${traffic.color}`}>{traffic.label}</span>
+        </div>
+      </div>
+
+      <div className="mb-4 p-3 bg-gray-50/80 rounded-xl">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Transport Mix</p>
         <ResourceFlow resources={route.resources || []} />
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+      <div className="flex items-center justify-between pt-3 border-t border-gray-50">
         <div className="flex items-center gap-1.5">
-          <Shield size={11} className="text-emerald-500" />
-          <span className="text-xs font-bold text-emerald-600">{route.confidence}%</span>
-          <span className="text-[10px] text-gray-400">confidence</span>
+          <Shield size={12} className="text-emerald-500" />
+          <span className="text-sm font-semibold text-emerald-600">{route.confidence}%</span>
+          <span className="text-xs text-gray-400">confidence</span>
         </div>
-        {route.predictedDelay > 0 && (
+        {route.transfers > 0 && (
           <div className="flex items-center gap-1">
-            <AlertTriangle size={10} className="text-amber-500" />
-            <span className="text-[10px] font-bold text-amber-600">+{route.predictedDelay} min peak</span>
+            <ArrowUpDown size={11} className="text-gray-400" />
+            <span className="text-xs text-gray-500">{route.transfers} transfer{route.transfers > 1 ? 's' : ''}</span>
           </div>
         )}
       </div>
@@ -429,11 +420,11 @@ const LiveMapScreen = () => {
             )}
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleSearch}
               disabled={loading}
-              className="w-full mt-5 py-3.5 bg-gradient-to-r from-[#1b3a2a] to-[#2c5f45] text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_8px_16px_rgba(27,58,42,0.2)] hover:shadow-[0_12px_20px_rgba(27,58,42,0.3)] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full mt-5 py-3.5 bg-[#1b3a2a] text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:bg-[#234d38] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -465,8 +456,8 @@ const LiveMapScreen = () => {
         </div>
 
         {/* ── RIGHT PANEL ── */}
-        <div className="space-y-5">
-          <motion.div variants={fadeUp} className="w-full" style={{ height: 400 }}>
+        <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-180px)]">
+          <motion.div variants={fadeUp} className="w-full" style={{ height: 420 }}>
             <MapComponent
               routes={mapRoutes}
               selectedRouteId={selectedRoute || undefined}
@@ -544,7 +535,7 @@ const LiveMapScreen = () => {
                 )}
 
                 {/* Route Summary Cards — equal-width grid */}
-                <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3">
+                <motion.div variants={fadeUp} className="grid grid-cols-3 gap-4">
                   {routes.map((route) => {
                     const cfg = routeTypeConfig[route.type] || routeTypeConfig.comfort;
                     const isSelected = route.id === selectedRoute;
@@ -552,37 +543,37 @@ const LiveMapScreen = () => {
                     return (
                       <motion.div
                         key={route.id}
-                        whileHover={{ scale: 1.02 }}
+                        whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleSelectRoute(route.id)}
-                        className={`rounded-2xl p-4 border-2 cursor-pointer transition-all flex flex-col gap-2 ${
+                        className={`rounded-2xl p-4 cursor-pointer transition-all flex flex-col gap-2 ${
                           isSelected
-                            ? 'border-[#1b3a2a] bg-[#f0f7f2] shadow-md'
-                            : 'border-gray-100 bg-white hover:border-gray-200'
+                            ? 'border-2 border-[#1b3a2a]/30 bg-white shadow-lg ring-1 ring-[#1b3a2a]/10'
+                            : 'border border-gray-100 bg-white hover:border-gray-200 hover:shadow-md'
                         }`}
                       >
-                        <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex items-center gap-2 mb-1">
                           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
-                          <Icon size={11} className={isSelected ? 'text-[#1b3a2a]' : 'text-gray-400'} />
-                          <span className="text-xs font-bold text-gray-900">{cfg.label}</span>
+                          <Icon size={13} className={isSelected ? 'text-[#1b3a2a]' : 'text-gray-400'} />
+                          <span className="text-sm font-bold text-gray-900">{cfg.label}</span>
                           {isSelected && (
-                            <span className="text-[9px] font-bold bg-[#1b3a2a] text-white px-1.5 py-0.5 rounded ml-auto">✓</span>
+                            <span className="text-[9px] font-bold bg-[#1b3a2a] text-white px-1.5 py-0.5 rounded ml-auto">Active</span>
                           )}
                         </div>
                         <div>
-                          <div className="flex items-baseline gap-0.5">
-                            <span className="text-xl font-bold text-gray-900 tabular-nums">{route.durationMin}</span>
-                            <span className="text-[10px] font-semibold text-gray-400">min</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-bold text-gray-900 tabular-nums">{route.durationMin}</span>
+                            <span className="text-xs font-medium text-gray-400">min</span>
                           </div>
-                          <div className="flex items-center justify-between text-[10px] text-gray-500 mt-0.5">
-                            <span>₹{route.estimatedCost}</span>
+                          <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                            <span className="font-semibold">₹{route.estimatedCost}</span>
                             <span>{route.distanceKm} km</span>
                           </div>
                         </div>
                         <ResourceFlow resources={route.resources || []} compact />
-                        <div className="flex items-center gap-1 mt-auto pt-1 border-t border-gray-100/80">
-                          <Shield size={9} className="text-emerald-500" />
-                          <span className="text-[10px] font-bold text-emerald-600">{route.confidence}%</span>
+                        <div className="flex items-center gap-1 mt-auto pt-2 border-t border-gray-50">
+                          <Shield size={10} className="text-emerald-500" />
+                          <span className="text-xs font-semibold text-emerald-600">{route.confidence}%</span>
                         </div>
                       </motion.div>
                     );
@@ -601,52 +592,52 @@ const LiveMapScreen = () => {
 
                 {/* Selected Route Analysis Panel */}
                 {activeRoute && (
-                  <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100">
-                    <h4 className="font-bold text-sm text-gray-900 mb-4 flex items-center gap-2">
-                      <BarChart3 size={14} className="text-[#1b3a2a]" />
+                  <motion.div variants={fadeUp} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h4 className="font-bold text-base text-gray-900 mb-5 flex items-center gap-2">
+                      <BarChart3 size={16} className="text-[#1b3a2a]" />
                       Route Analysis — {routeTypeConfig[activeRoute.type]?.label || activeRoute.type}
                     </h4>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-gray-50 rounded-2xl p-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-gray-50 rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <Clock size={13} className="text-gray-400" />
-                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Time</span>
+                          <Clock size={14} className="text-gray-400" />
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Time</span>
                         </div>
-                        <p className="text-2xl font-bold text-gray-900">{activeRoute.durationMin} <span className="text-sm font-medium text-gray-400">min</span></p>
+                        <p className="text-xl font-bold text-gray-900">{activeRoute.durationMin} <span className="text-sm font-medium text-gray-400">min</span></p>
                         {activeRoute.predictedDelay > 0 && (
-                          <p className="text-[11px] text-amber-600 mt-1 font-medium">+{activeRoute.predictedDelay} min during peak hours</p>
+                          <p className="text-xs text-amber-600 mt-1 font-medium">+{activeRoute.predictedDelay} min peak</p>
                         )}
                       </div>
 
-                      <div className="bg-gray-50 rounded-2xl p-4">
+                      <div className="bg-gray-50 rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <TrendingDown size={13} className="text-gray-400" />
-                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Distance</span>
+                          <TrendingDown size={14} className="text-gray-400" />
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Distance</span>
                         </div>
-                        <p className="text-2xl font-bold text-gray-900">{activeRoute.distanceKm} <span className="text-sm font-medium text-gray-400">km</span></p>
+                        <p className="text-xl font-bold text-gray-900">{activeRoute.distanceKm} <span className="text-sm font-medium text-gray-400">km</span></p>
                       </div>
 
-                      <div className="bg-gray-50 rounded-2xl p-4">
+                      <div className="bg-gray-50 rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <Wallet size={13} className="text-gray-400" />
-                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Cost</span>
+                          <Wallet size={14} className="text-gray-400" />
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cost</span>
                         </div>
-                        <p className="text-2xl font-bold text-gray-900">₹{activeRoute.estimatedCost}</p>
+                        <p className="text-xl font-bold text-gray-900">₹{activeRoute.estimatedCost}</p>
                       </div>
 
-                      <div className="bg-gray-50 rounded-2xl p-4">
+                      <div className="bg-gray-50 rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <Gauge size={13} className="text-gray-400" />
-                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Traffic</span>
+                          <Gauge size={14} className="text-gray-400" />
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Traffic</span>
                         </div>
                         {(() => {
                           const tc = trafficConfig[activeRoute.trafficLevel] || trafficConfig.medium;
                           return (
                             <>
-                              <p className={`text-lg font-bold ${tc.color}`}>{tc.label}</p>
+                              <p className={`text-base font-bold ${tc.color}`}>{tc.label}</p>
                               {activeRoute.trafficLevel === 'high' && (
-                                <p className="text-[11px] text-red-500 mt-1 font-medium">Expect delays</p>
+                                <p className="text-xs text-red-500 mt-1 font-medium">Expect delays</p>
                               )}
                             </>
                           );
@@ -654,22 +645,21 @@ const LiveMapScreen = () => {
                       </div>
                     </div>
 
-                    {/* Transport Mix for selected */}
-                    <div className="mt-4 p-4 bg-gray-50 rounded-2xl">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Transport Mix</p>
+                    <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Transport Mix</p>
                       <ResourceFlow resources={activeRoute.resources || []} />
                     </div>
 
-                    <div className="mt-4 flex items-center gap-4 pt-4 border-t border-gray-100">
+                    <div className="mt-4 flex items-center gap-5 pt-4 border-t border-gray-50">
                       <div className="flex items-center gap-1.5">
-                        <Shield size={12} className="text-emerald-500" />
-                        <span className="text-sm font-bold text-emerald-600">{activeRoute.confidence}%</span>
+                        <Shield size={13} className="text-emerald-500" />
+                        <span className="text-sm font-semibold text-emerald-600">{activeRoute.confidence}%</span>
                         <span className="text-xs text-gray-400">AI confidence</span>
                       </div>
                       {activeRoute.transfers > 0 && (
                         <div className="flex items-center gap-1.5">
-                          <ArrowUpDown size={12} className="text-gray-400" />
-                          <span className="text-sm font-medium text-gray-600">{activeRoute.transfers} transfers</span>
+                          <ArrowUpDown size={13} className="text-gray-400" />
+                          <span className="text-sm font-medium text-gray-600">{activeRoute.transfers} transfer{activeRoute.transfers > 1 ? 's' : ''}</span>
                         </div>
                       )}
                     </div>
@@ -679,11 +669,11 @@ const LiveMapScreen = () => {
             )}
 
             {!loading && routes.length === 0 && !error && (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-white rounded-[28px] shadow-sm border border-gray-100 p-10 flex flex-col items-center justify-center text-center">
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 flex flex-col items-center justify-center text-center">
                 <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mb-4">
                   <BarChart3 size={24} className="text-gray-300" />
                 </div>
-                <h4 className="font-bold text-gray-900 mb-1">No routes analyzed</h4>
+                <h4 className="font-semibold text-gray-900 mb-1">No routes analyzed</h4>
                 <p className="text-sm text-gray-400 font-medium">Enter origin and destination to compare AI-optimized routes</p>
               </motion.div>
             )}

@@ -135,7 +135,7 @@ const PlannerScreen = () => {
       className="w-full max-w-[1200px] mx-auto pb-10"
     >
       {/* ─── Header ─── */}
-      <motion.div variants={fadeUp} className="mb-10">
+      <motion.div variants={fadeUp} className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">
           Route Planner
         </h1>
@@ -144,7 +144,7 @@ const PlannerScreen = () => {
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-8">
         {/* ═══════════════════════════════════════════
             LEFT COLUMN — Search + Preferences
            ═══════════════════════════════════════════ */}
@@ -152,55 +152,55 @@ const PlannerScreen = () => {
           {/* ── Search Card ── */}
           <motion.div
             variants={fadeUp}
-            className="bg-white rounded-[28px] p-7 shadow-sm border border-gray-100"
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
           >
-            <h3 className="font-bold text-lg text-gray-900 mb-6">Plan Your Route</h3>
+            <h3 className="font-semibold text-base text-gray-900 mb-5">Plan Your Route</h3>
 
             {/* Origin */}
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
-                <MapPin size={18} strokeWidth={2.5} className="text-blue-600" />
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                <MapPin size={17} strokeWidth={2.5} className="text-blue-600" />
               </div>
               <input
                 id="planner-origin"
                 value={origin}
                 onChange={(e) => { setOrigin(e.target.value); setLiveRoutes(null); }}
                 onKeyDown={(e) => e.key === 'Enter' && handlePlan()}
-                className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
+                className="w-full px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
                 placeholder="Enter origin..."
               />
             </div>
 
             {/* Connector + Swap */}
-            <div className="flex items-center justify-between pl-5 h-10 relative">
+            <div className="flex items-center justify-between pl-4 h-8 relative">
               <div className="border-l-2 border-dashed border-gray-200 h-full" />
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9, rotate: 180 }}
                 onClick={() => { const t = origin; setOrigin(dest); setDest(t); setLiveRoutes(null); }}
-                className="w-9 h-9 bg-white rounded-full border border-gray-200 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
+                className="w-8 h-8 bg-white rounded-full border border-gray-200 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
               >
-                <ArrowUpDown size={15} strokeWidth={2.5} className="text-gray-500" />
+                <ArrowUpDown size={14} strokeWidth={2.5} className="text-gray-500" />
               </motion.button>
             </div>
 
             {/* Destination */}
             <div className="flex items-center gap-3 mt-1">
-              <div className="w-11 h-11 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center flex-shrink-0">
-                <Flag size={18} strokeWidth={2.5} className="text-red-500" />
+              <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center flex-shrink-0">
+                <Flag size={17} strokeWidth={2.5} className="text-red-500" />
               </div>
               <input
                 id="planner-destination"
                 value={dest}
                 onChange={(e) => { setDest(e.target.value); setLiveRoutes(null); }}
                 onKeyDown={(e) => e.key === 'Enter' && handlePlan()}
-                className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
+                className="w-full px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
                 placeholder="Enter destination..."
               />
             </div>
 
             {/* Time Mode Selector */}
-            <div className="flex gap-2 mt-6">
+            <div className="flex gap-2 mt-5">
               {(['now', 'depart', 'arrive'] as const).map((m) => {
                 const active = timeMode === m;
                 return (
@@ -208,7 +208,7 @@ const PlannerScreen = () => {
                     key={m}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setTimeMode(m)}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all ${active
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold tracking-wide transition-all ${active
                       ? 'bg-[#1b3a2a] text-white shadow-sm'
                       : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
                       }`}
@@ -221,19 +221,19 @@ const PlannerScreen = () => {
 
             {/* API error */}
             {apiError && (
-              <p className="mt-3 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+              <p className="mt-4 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 ⚠ {apiError}
               </p>
             )}
 
             {/* Plan button */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handlePlan}
               disabled={apiLoading}
               id="planner-search-btn"
-              className="w-full mt-5 py-3.5 bg-gradient-to-r from-[#1b3a2a] to-[#2c5f45] text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_8px_16px_rgba(27,58,42,0.2)] hover:shadow-[0_12px_20px_rgba(27,58,42,0.3)] transition-all disabled:opacity-60"
+              className="w-full mt-4 py-3 bg-[#1b3a2a] text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:bg-[#234d38] transition-all disabled:opacity-60"
             >
               {apiLoading ? <><Loader2 size={18} className="animate-spin" /> Calculating…</> : <><Search size={18} /> Find Routes</>}
             </motion.button>
@@ -242,18 +242,18 @@ const PlannerScreen = () => {
           {/* ── Preferences Card ── */}
           <motion.div
             variants={fadeUp}
-            className="bg-white rounded-[28px] p-7 shadow-sm border border-gray-100"
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
           >
-            <h3 className="font-bold text-lg text-gray-900 mb-6">Route Preferences</h3>
+            <h3 className="font-semibold text-base text-gray-900 mb-5">Route Preferences</h3>
 
             {/* Sliders */}
-            <div className="space-y-6">
+            <div className="space-y-5">
               {sliders.map(({ icon: Icon, label, value, set, color, track, trackBg }) => (
                 <div key={label}>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-lg ${trackBg} flex items-center justify-center`}>
-                        <Icon size={15} strokeWidth={2.5} className={color} />
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-7 h-7 rounded-lg ${trackBg} flex items-center justify-center`}>
+                        <Icon size={14} strokeWidth={2.5} className={color} />
                       </div>
                       <span className="text-sm font-semibold text-gray-700">{label}</span>
                     </div>
@@ -263,7 +263,7 @@ const PlannerScreen = () => {
                   </div>
 
                   {/* Custom range slider */}
-                  <div className="relative h-3 w-full group mt-1">
+                  <div className="relative h-2.5 w-full group mt-1">
                     <div className={`absolute inset-0 rounded-full ${trackBg} shadow-inner`} />
                     <motion.div
                       className={`absolute left-0 top-0 bottom-0 rounded-full ${track} shadow-sm`}
@@ -281,9 +281,9 @@ const PlannerScreen = () => {
                     />
                     {/* Thumb indicator */}
                     <motion.div
-                      className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border-[4px] ${label === 'Speed' ? 'border-blue-500' : label === 'Cost' ? 'border-emerald-500' : 'border-amber-500'
+                      className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white border-4 ${label === 'Speed' ? 'border-blue-500' : label === 'Cost' ? 'border-emerald-500' : 'border-amber-500'
                         } shadow-md pointer-events-none group-hover:scale-110 transition-transform duration-200`}
-                      style={{ left: `calc(${value}% - 12px)` }}
+                      style={{ left: `calc(${value}% - 10px)` }}
                       layout
                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     />
@@ -295,11 +295,11 @@ const PlannerScreen = () => {
             {/* Priority indicator */}
             <motion.div
               layout
-              className={`mt-6 ${priorityMeta.bg} rounded-2xl p-4 flex items-center gap-3 border ${highest === 'SPEED' ? 'border-blue-200' : highest === 'COST' ? 'border-emerald-200' : 'border-amber-200'
+              className={`mt-5 ${priorityMeta.bg} rounded-xl p-3.5 flex items-center gap-3 border ${highest === 'SPEED' ? 'border-blue-200' : highest === 'COST' ? 'border-emerald-200' : 'border-amber-200'
                 }`}
             >
-              <div className={`w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm`}>
-                <priorityMeta.icon size={16} className={priorityMeta.color} strokeWidth={2.5} />
+              <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <priorityMeta.icon size={14} className={priorityMeta.color} strokeWidth={2.5} />
               </div>
               <span className={`text-sm font-bold ${priorityMeta.color}`}>
                 {priorityMeta.label}
@@ -307,7 +307,7 @@ const PlannerScreen = () => {
             </motion.div>
 
             {/* Mode Filter */}
-            <div className="mt-6">
+            <div className="mt-5 pt-5 border-t border-gray-100">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                 Transport Modes
               </p>
@@ -321,12 +321,12 @@ const PlannerScreen = () => {
                       key={m}
                       whileTap={{ scale: 0.92 }}
                       onClick={() => setModes((prev) => ({ ...prev, [m]: !prev[m] }))}
-                      className={`flex-1 py-3 rounded-2xl flex flex-col items-center gap-1.5 transition-all border ${active
+                      className={`flex-1 py-2.5 rounded-xl flex flex-col items-center gap-1 transition-all border ${active
                         ? `${cfg.bg} ${cfg.border} ${cfg.color}`
                         : 'bg-gray-50 border-gray-200 text-gray-400 opacity-50'
                         }`}
                     >
-                      <Icon size={18} strokeWidth={2.5} />
+                      <Icon size={16} strokeWidth={2.5} />
                       <span className="text-[10px] font-bold uppercase tracking-wider">
                         {cfg.label}
                       </span>
@@ -341,7 +341,7 @@ const PlannerScreen = () => {
         {/* ═══════════════════════════════════════════
             RIGHT COLUMN — Route Results
            ═══════════════════════════════════════════ */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Results header */}
           <motion.div
             variants={fadeUp}
@@ -374,12 +374,12 @@ const PlannerScreen = () => {
               <motion.div
                 key={route.id}
                 variants={fadeUp}
-                className={`bg-white rounded-[28px] shadow-sm overflow-hidden ${isRecommended ? 'border-2 border-[#1b3a2a]' : 'border border-gray-100'}`}
+                className={`bg-white rounded-2xl shadow-sm overflow-hidden transition-all ${isRecommended ? 'border-2 border-[#1b3a2a]/30 ring-1 ring-[#1b3a2a]/10' : 'border border-gray-100 hover:shadow-md'}`}
               >
                 <div className="p-6">
                   {/* Badge + Time row */}
-                  <div className="flex items-start justify-between mb-5">
-                    <div className={`${badge.bg} ${badge.text} px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`${badge.bg} ${badge.text} px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5`}>
                       <BadgeIcon size={12} strokeWidth={3} />
                       {route.badge}
                       {isRecommended && (
@@ -393,9 +393,9 @@ const PlannerScreen = () => {
                         <span className="text-3xl font-bold text-gray-900 tracking-tight tabular-nums">
                           {route.totalTime}
                         </span>
-                        <span className="text-sm font-semibold text-gray-400">min</span>
+                        <span className="text-sm font-medium text-gray-400">min</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-500">
+                      <span className="text-sm font-semibold text-gray-500">
                         ₹{route.cost}
                       </span>
                     </div>
@@ -459,7 +459,7 @@ const PlannerScreen = () => {
                   {/* Info chips row */}
                   <div className="flex items-center gap-2 mt-4 flex-wrap">
                     {/* Legs */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 flex items-center gap-1.5">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
                       <ArrowRight size={12} className="text-gray-400" />
                       <span className="text-[11px] font-bold text-gray-600">
                         {legs} Legs
@@ -468,7 +468,7 @@ const PlannerScreen = () => {
 
                     {/* Traffic Level */}
                     <div className={`${traffic.bg} border ${route.trafficLevel === 'high' ? 'border-red-200' : route.trafficLevel === 'low' ? 'border-emerald-200' : 'border-amber-200'
-                      } rounded-xl px-3 py-1.5 flex items-center gap-1.5`}>
+                      } rounded-lg px-2.5 py-1.5 flex items-center gap-1.5`}>
                       <Users size={12} className={traffic.color} strokeWidth={2.5} />
                       <span className={`text-[11px] font-bold ${traffic.color}`}>
                         {traffic.label} Traffic
@@ -476,7 +476,7 @@ const PlannerScreen = () => {
                     </div>
 
                     {/* Confidence */}
-                    <div className={`rounded-xl px-3 py-1.5 flex items-center gap-1.5 border ${isRecommended ? 'bg-emerald-100 border-emerald-300' : 'bg-emerald-50 border-emerald-200'
+                    <div className={`rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 border ${isRecommended ? 'bg-emerald-100 border-emerald-300' : 'bg-emerald-50 border-emerald-200'
                       }`}>
                       <Shield size={12} className="text-emerald-600" strokeWidth={2.5} />
                       <span className="text-[11px] font-bold text-emerald-600 tabular-nums">
@@ -487,12 +487,12 @@ const PlannerScreen = () => {
 
                   {/* Select button */}
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setExpandedRoute(isExpanded ? null : route.id)}
-                    className={`w-full mt-5 py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300 ${isExpanded
+                    className={`w-full mt-5 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-300 ${isExpanded
                       ? 'bg-gray-100 text-gray-600 border border-gray-200 shadow-inner'
-                      : 'bg-gradient-to-r from-[#1b3a2a] to-[#2c5f45] text-white shadow-[0_8px_16px_rgba(27,58,42,0.2)] hover:shadow-[0_12px_20px_rgba(27,58,42,0.3)] hover:from-[#234d38] hover:to-[#387a58]'
+                      : 'bg-[#1b3a2a] text-white shadow-md hover:shadow-lg hover:bg-[#234d38]'
                       }`}
                   >
                     {isExpanded ? (
@@ -520,7 +520,7 @@ const PlannerScreen = () => {
                       className="overflow-hidden"
                     >
                       <div className="px-6 pb-6 pt-2 border-t border-gray-100">
-                        <div className="bg-gray-50 rounded-2xl p-5">
+                        <div className="bg-gray-50 rounded-xl p-5">
                           {segments.map((seg, i) => {
                             const modeKey = seg.mode as keyof typeof modeConfig;
                             const cfg = modeConfig[modeKey] || modeConfig.walk;
@@ -532,14 +532,14 @@ const PlannerScreen = () => {
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: i * 0.1, duration: 0.3 }}
-                                className="flex gap-3 mb-0 last:mb-0"
+                                className="flex gap-3"
                               >
                                 {/* Timeline */}
                                 <div className="flex flex-col items-center pt-1">
-                                  <div className={`w-8 h-8 rounded-xl ${cfg.bg} border ${cfg.border} flex items-center justify-center flex-shrink-0`}>
+                                  <div className={`w-8 h-8 rounded-lg ${cfg.bg} border ${cfg.border} flex items-center justify-center flex-shrink-0`}>
                                     <StepIcon size={14} className={cfg.color} strokeWidth={2.5} />
                                   </div>
-                                    {i < segments.length - 1 && (
+                                  {i < segments.length - 1 && (
                                     <div className="w-0.5 flex-1 bg-gray-200 my-1 min-h-[20px]" />
                                   )}
                                 </div>
@@ -547,7 +547,7 @@ const PlannerScreen = () => {
                                 {/* Step content */}
                                 <div className="pb-4 last:pb-0 flex-1 min-w-0">
                                   <div className="flex items-center justify-between">
-                                    <p className="font-bold text-sm text-gray-900">
+                                    <p className="font-semibold text-sm text-gray-900">
                                       {seg.label}
                                     </p>
                                     <span className="text-xs font-semibold text-gray-500 flex items-center gap-1 tabular-nums">
@@ -574,23 +574,23 @@ const PlannerScreen = () => {
           {/* ── Comparison Table (Desktop only) ── */}
           <motion.div
             variants={fadeUp}
-            className="hidden xl:block bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden"
+            className="hidden xl:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
           >
-            <div className="p-6 pb-3">
-              <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
-                <Gauge size={18} className="text-gray-400" />
+            <div className="p-5 pb-3">
+              <h3 className="font-semibold text-base text-gray-900 flex items-center gap-2">
+                <Gauge size={16} className="text-gray-400" />
                 Route Comparison
               </h3>
             </div>
-            <div className="px-6 pb-6">
-              <div className="rounded-2xl overflow-hidden border border-gray-200">
+            <div className="px-5 pb-5">
+              <div className="rounded-xl overflow-hidden border border-gray-200">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50">
                       {['Route', 'Time', 'Cost', 'Legs', 'Traffic', 'Confidence'].map((h) => (
                         <th
                           key={h}
-                          className="px-4 py-3 text-left font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200"
+                          className="px-4 py-2.5 text-left font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200"
                         >
                           {h}
                         </th>
@@ -607,22 +607,22 @@ const PlannerScreen = () => {
                           className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
                             } hover:bg-blue-50/50 transition-colors`}
                         >
-                          <td className="px-4 py-3 font-bold text-gray-900 border-b border-gray-100">
+                          <td className="px-4 py-2.5 font-bold text-gray-900 border-b border-gray-100">
                             {r.badge}
                           </td>
-                          <td className="px-4 py-3 font-semibold text-gray-900 border-b border-gray-100 tabular-nums">
+                          <td className="px-4 py-2.5 font-semibold text-gray-900 border-b border-gray-100 tabular-nums">
                             {r.totalTime}m
                           </td>
-                          <td className="px-4 py-3 font-semibold text-gray-900 border-b border-gray-100 tabular-nums">
+                          <td className="px-4 py-2.5 font-semibold text-gray-900 border-b border-gray-100 tabular-nums">
                             ₹{r.cost}
                           </td>
-                          <td className="px-4 py-3 font-semibold text-gray-900 border-b border-gray-100">
+                          <td className="px-4 py-2.5 font-semibold text-gray-900 border-b border-gray-100">
                             {legs}
                           </td>
-                          <td className={`px-4 py-3 font-bold border-b border-gray-100 ${trf.color}`}>
+                          <td className={`px-4 py-2.5 font-bold border-b border-gray-100 ${trf.color}`}>
                             {trf.label}
                           </td>
-                          <td className="px-4 py-3 font-bold text-emerald-600 border-b border-gray-100 tabular-nums">
+                          <td className="px-4 py-2.5 font-bold text-emerald-600 border-b border-gray-100 tabular-nums">
                             {r.confidence}%
                           </td>
                         </tr>
