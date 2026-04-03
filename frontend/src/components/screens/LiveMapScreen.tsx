@@ -1,15 +1,60 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
-  MapPin, Flag, ArrowUpDown, Zap, IndianRupee, Users,
-  Clock, ChevronRight, Shield, Search, Navigation,
-  Train, Bus, Car, Footprints, Sparkles, AlertCircle,
+  MapPin,
+  Flag,
+  ArrowUpDown,
+  Zap,
+  IndianRupee,
+  Users,
+  Clock,
+  ChevronRight,
+  Shield,
+  Search,
+  Navigation,
+  Train,
+  Bus,
+  Car,
+  Footprints,
+  Sparkles,
+  AlertCircle,
   Loader2,
 } from 'lucide-react';
 import { planRoute, type BackendRoute, type BackendRouteStep } from '@/lib/api';
 import MapComponent, { type LatLng, type MapRoute } from '@/components/MapComponent';
+import { LIVE_LOCATION_KEY } from '@/components/ui/LiveLocationCard';
 
-// ─── Nominatim geocoding ───────────────────────────────────────────
+type StoredLiveLocation = {
+  lat: number;
+  lng: number;
+  area?: string;
+  address?: string;
+  accuracy?: number;
+  timestamp?: number;
+};
+
+function readLiveLocationFromSession(): StoredLiveLocation | null {
+  try {
+    const raw = sessionStorage.getItem(LIVE_LOCATION_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as StoredLiveLocation;
+    if (
+      typeof parsed?.lat !== 'number' ||
+      typeof parsed?.lng !== 'number' ||
+      Number.isNaN(parsed.lat) ||
+      Number.isNaN(parsed.lng)
+    ) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+// Nominatim geocoding
 async function geocodeLocation(query: string): Promise<LatLng> {
   const q = encodeURIComponent(`${query}, Mumbai, India`);
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`;
@@ -19,11 +64,12 @@ async function geocodeLocation(query: string): Promise<LatLng> {
   return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
 }
 
-// ─── Simulate 3 route polylines around two coords ─────────────────
+// Simulate 3 route polylines around two coords
 function buildRoutes(o: LatLng, d: LatLng): MapRoute[] {
   const mid = { lat: (o.lat + d.lat) / 2, lng: (o.lng + d.lng) / 2 };
   const latD = d.lat - o.lat;
   const lngD = d.lng - o.lng;
+
   return [
     {
       type: 'fastest',
@@ -39,7 +85,7 @@ function buildRoutes(o: LatLng, d: LatLng): MapRoute[] {
       color: '#3b82f6',
       positions: [
         [o.lat, o.lng],
-        [mid.lat - latD * 0.10, mid.lng + lngD * 0.12],
+        [mid.lat - latD * 0.1, mid.lng + lngD * 0.12],
         [mid.lat - latD * 0.05, mid.lng - lngD * 0.05],
         [d.lat, d.lng],
       ],
@@ -64,38 +110,34 @@ const fadeUp: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
 };
 
-// ─── Mode styling config ──────────────────────────────────────────
+// Mode styling config
 const modeConfig: Record<string, { icon: any; color: string; bg: string; border: string; dot: string }> = {
-  metro: { icon: Train,    color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',    dot: 'bg-blue-500' },
-  bus:   { icon: Bus,      color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200',   dot: 'bg-amber-500' },
-  auto:  { icon: Car,      color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-  cab:   { icon: Car,      color: 'text-purple-600',  bg: 'bg-purple-50',  border: 'border-purple-200',  dot: 'bg-purple-500' },
-  walk:  { icon: Footprints, color: 'text-gray-500',  bg: 'bg-gray-50',    border: 'border-gray-200',    dot: 'bg-gray-400' },
-  train: { icon: Train,    color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-200',  dot: 'bg-indigo-500' },
+  metro: { icon: Train, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', dot: 'bg-blue-500' },
+  bus: { icon: Bus, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', dot: 'bg-amber-500' },
+  auto: { icon: Car, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+  cab: { icon: Car, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', dot: 'bg-purple-500' },
+  walk: { icon: Footprints, color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200', dot: 'bg-gray-400' },
+  train: { icon: Train, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200', dot: 'bg-indigo-500' },
 };
 
 const getModeConfig = (mode: string) => modeConfig[mode] || modeConfig.walk;
 
-// ─── Route type badge config ──────────────────────────────────────
+// Route type badge config
 const routeTypeBadge: Record<string, { bg: string; text: string; label: string; icon: any }> = {
-  fastest: { bg: 'bg-[#1b3a2a]', text: 'text-white', label: '⚡ Fastest',  icon: Zap },
-  cheapest:{ bg: 'bg-emerald-600', text: 'text-white', label: '₹ Cheapest', icon: IndianRupee },
-  comfort: { bg: 'bg-gray-100',  text: 'text-gray-600', label: '😌 Comfort', icon: Users },
+  fastest: { bg: 'bg-[#1b3a2a]', text: 'text-white', label: '⚡ Fastest', icon: Zap },
+  cheapest: { bg: 'bg-emerald-600', text: 'text-white', label: '₹ Cheapest', icon: IndianRupee },
+  comfort: { bg: 'bg-gray-100', text: 'text-gray-600', label: '😌 Comfort', icon: Users },
 };
 
-// ─── Route card ───────────────────────────────────────────────────
-function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
+// Route card
+function RouteCard({ route }: { route: BackendRoute; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const badge = routeTypeBadge[route.type] || routeTypeBadge.comfort;
   const BadgeIcon = badge.icon;
 
   return (
-    <motion.div
-      variants={fadeUp}
-      className="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden"
-    >
+    <motion.div variants={fadeUp} className="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-6">
-        {/* Badge + time row */}
         <div className="flex items-start justify-between mb-5">
           <div className={`${badge.bg} ${badge.text} px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5`}>
             <BadgeIcon size={12} strokeWidth={3} />
@@ -112,7 +154,6 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
           </div>
         </div>
 
-        {/* Tags + meta chips */}
         <div className="flex items-center gap-2 flex-wrap mb-4">
           {route.tags.map((tag) => (
             <span key={tag} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1 text-[11px] font-bold text-gray-600">
@@ -125,11 +166,12 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1 flex items-center gap-1.5">
             <ChevronRight size={11} className="text-gray-400" />
-            <span className="text-[11px] font-bold text-gray-600">{route.transfers} transfer{route.transfers !== 1 ? 's' : ''}</span>
+            <span className="text-[11px] font-bold text-gray-600">
+              {route.transfers} transfer{route.transfers !== 1 ? 's' : ''}
+            </span>
           </div>
         </div>
 
-        {/* Mode pill trail */}
         <div className="flex items-center gap-1.5 flex-wrap mb-1">
           {route.steps.map((step, i) => {
             const cfg = getModeConfig(step.mode);
@@ -140,15 +182,12 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
                   <Icon size={12} className={cfg.color} strokeWidth={2.5} />
                   <span className={`text-[11px] font-bold ${cfg.color}`}>{step.duration}m</span>
                 </div>
-                {i < route.steps.length - 1 && (
-                  <ChevronRight size={12} className="text-gray-300" />
-                )}
+                {i < route.steps.length - 1 && <ChevronRight size={12} className="text-gray-300" />}
               </div>
             );
           })}
         </div>
 
-        {/* Last mile note */}
         {route.lastMile && (
           <p className="text-[11px] text-gray-400 font-medium mt-2 flex items-center gap-1">
             <Navigation size={10} className="text-gray-400" />
@@ -156,7 +195,6 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
           </p>
         )}
 
-        {/* Expand button */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -168,14 +206,10 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
           }`}
         >
           {expanded ? 'Collapse Steps' : 'View Step-by-Step'}
-          <ChevronRight
-            size={16}
-            className={`transition-transform duration-300 ${expanded ? 'rotate-90' : ''}`}
-          />
+          <ChevronRight size={16} className={`transition-transform duration-300 ${expanded ? 'rotate-90' : ''}`} />
         </motion.button>
       </div>
 
-      {/* Expanded steps */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -198,7 +232,6 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
                       transition={{ delay: i * 0.08, duration: 0.3 }}
                       className="flex gap-3"
                     >
-                      {/* Timeline */}
                       <div className="flex flex-col items-center pt-1">
                         <div className={`w-8 h-8 rounded-xl ${cfg.bg} border ${cfg.border} flex items-center justify-center flex-shrink-0`}>
                           <Icon size={14} className={cfg.color} strokeWidth={2.5} />
@@ -208,7 +241,6 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
                         )}
                       </div>
 
-                      {/* Content */}
                       <div className="pb-4 last:pb-0 flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="font-bold text-sm text-gray-900">{step.label}</p>
@@ -231,18 +263,22 @@ function RouteCard({ route, index }: { route: BackendRoute; index: number }) {
   );
 }
 
-
-
-// ─── Main Screen ──────────────────────────────────────────────────
+// Main Screen
 const LiveMapScreen = () => {
-  const [source, setSource] = useState('');
+  const storedLiveLocation = readLiveLocationFromSession();
+
+  const [source, setSource] = useState(
+    () => storedLiveLocation?.area || storedLiveLocation?.address || ''
+  );
   const [destination, setDestination] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ routes: BackendRoute[]; distanceKm: number } | null>(null);
 
   // Map state
-  const [originCoords, setOriginCoords] = useState<LatLng | null>(null);
+  const [originCoords, setOriginCoords] = useState<LatLng | null>(
+    storedLiveLocation ? { lat: storedLiveLocation.lat, lng: storedLiveLocation.lng } : null
+  );
   const [destCoords, setDestCoords] = useState<LatLng | null>(null);
   const [mapRoutes, setMapRoutes] = useState<MapRoute[]>([]);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -256,28 +292,36 @@ const LiveMapScreen = () => {
   const handleSearch = async () => {
     const src = source.trim();
     const dst = destination.trim();
-    if (!src || !dst) {
+
+    const storedLabel = storedLiveLocation?.area || storedLiveLocation?.address || '';
+    const canUseStoredOrigin =
+      !!storedLiveLocation &&
+      (!src || src.toLowerCase() === storedLabel.toLowerCase());
+
+    if (!dst || (!src && !canUseStoredOrigin)) {
       setError('Please enter both origin and destination.');
       return;
     }
+
     setError(null);
     setGeoError(null);
     setLoading(true);
 
-    // Geocode & backend call in parallel
+    const originPromise: Promise<LatLng> = canUseStoredOrigin
+      ? Promise.resolve({ lat: storedLiveLocation!.lat, lng: storedLiveLocation!.lng })
+      : geocodeLocation(src);
+
     const [routeData, geoResult] = await Promise.allSettled([
-      planRoute(src, dst),
-      Promise.all([geocodeLocation(src), geocodeLocation(dst)]),
+      planRoute(src || storedLiveLocation?.area || storedLiveLocation?.address || 'Current location', dst),
+      Promise.all([originPromise, geocodeLocation(dst)]),
     ]);
 
-    // Handle route results
     if (routeData.status === 'fulfilled') {
       setResult({ routes: routeData.value.routes, distanceKm: routeData.value.distanceKm });
     } else {
       setError('Could not connect to the backend. Make sure the server is running on port 5000.');
     }
 
-    // Handle geocoding results
     if (geoResult.status === 'fulfilled') {
       const [oCoords, dCoords] = geoResult.value;
       setOriginCoords(oCoords);
@@ -285,7 +329,11 @@ const LiveMapScreen = () => {
       setMapRoutes(buildRoutes(oCoords, dCoords));
     } else {
       setGeoError('Could not find one or both locations on the map.');
-      setOriginCoords(null);
+      setOriginCoords(
+        canUseStoredOrigin && storedLiveLocation
+          ? { lat: storedLiveLocation.lat, lng: storedLiveLocation.lng }
+          : null
+      );
       setDestCoords(null);
       setMapRoutes([]);
     }
@@ -293,7 +341,7 @@ const LiveMapScreen = () => {
     setLoading(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleSearch();
   };
 
@@ -304,22 +352,16 @@ const LiveMapScreen = () => {
       animate="show"
       className="w-full max-w-[1200px] mx-auto pb-10"
     >
-      {/* ─── Header ─── */}
       <motion.div variants={fadeUp} className="mb-10">
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">Live Map</h1>
         <p className="text-gray-500 font-medium">AI-powered route planning with real-time intelligence</p>
       </motion.div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-8">
-        {/* ══════════════════════════════
-            LEFT — Search Panel
-           ══════════════════════════════ */}
         <div className="space-y-6">
-          {/* Search Card */}
           <motion.div variants={fadeUp} className="bg-white rounded-[28px] p-7 shadow-sm border border-gray-100">
             <h3 className="font-bold text-lg text-gray-900 mb-6">Plan Your Journey</h3>
 
-            {/* Origin */}
             <div className="flex items-center gap-3 mb-1">
               <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
                 <MapPin size={18} strokeWidth={2.5} className="text-blue-600" />
@@ -327,14 +369,16 @@ const LiveMapScreen = () => {
               <input
                 id="live-map-origin"
                 value={source}
-                onChange={(e) => { setSource(e.target.value); setResult(null); }}
+                onChange={(e) => {
+                  setSource(e.target.value);
+                  setResult(null);
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter origin (e.g. Andheri)"
                 className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
               />
             </div>
 
-            {/* Connector + Swap */}
             <div className="flex items-center justify-between pl-5 h-10 relative">
               <div className="border-l-2 border-dashed border-gray-200 h-full" />
               <motion.button
@@ -347,7 +391,6 @@ const LiveMapScreen = () => {
               </motion.button>
             </div>
 
-            {/* Destination */}
             <div className="flex items-center gap-3 mt-1">
               <div className="w-11 h-11 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center flex-shrink-0">
                 <Flag size={18} strokeWidth={2.5} className="text-red-500" />
@@ -355,14 +398,16 @@ const LiveMapScreen = () => {
               <input
                 id="live-map-destination"
                 value={destination}
-                onChange={(e) => { setDestination(e.target.value); setResult(null); }}
+                onChange={(e) => {
+                  setDestination(e.target.value);
+                  setResult(null);
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter destination (e.g. BKC)"
                 className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-medium text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all"
               />
             </div>
 
-            {/* Error message */}
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
@@ -374,7 +419,6 @@ const LiveMapScreen = () => {
               </motion.div>
             )}
 
-            {/* Search button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
@@ -397,7 +441,6 @@ const LiveMapScreen = () => {
             </motion.button>
           </motion.div>
 
-          {/* Info card */}
           <motion.div variants={fadeUp} className="bg-[#1b3a2a] rounded-[28px] p-6 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
             <div className="relative z-10">
@@ -425,20 +468,11 @@ const LiveMapScreen = () => {
           </motion.div>
         </div>
 
-        {/* ══════════════════════════════
-            RIGHT — Map + Results
-           ══════════════════════════════ */}
         <div className="space-y-6">
-          {/* Live Map (OpenStreetMap via React Leaflet) */}
           <motion.div variants={fadeUp} className="w-full" style={{ height: 420 }}>
-            <MapComponent
-              originCoords={originCoords}
-              destCoords={destCoords}
-              routes={mapRoutes}
-            />
+            <MapComponent originCoords={originCoords} destCoords={destCoords} routes={mapRoutes} />
           </motion.div>
 
-          {/* Geocoding error toast */}
           {geoError && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
@@ -450,7 +484,6 @@ const LiveMapScreen = () => {
             </motion.div>
           )}
 
-          {/* Results */}
           <AnimatePresence mode="wait">
             {loading && (
               <motion.div
