@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
   AlertTriangle, Clock, TrendingUp, ChevronDown, ChevronRight,
   Shield, Bus, Footprints, Car, Train, Sparkles, XCircle,
   Radio, CloudRain, Zap as ZapIcon, Construction, Users,
-  Trash2, Shuffle, Play, CheckCircle2, TriangleAlert
+  Trash2, Shuffle, Play, CheckCircle2, TriangleAlert, Loader2
 } from 'lucide-react';
 import SegmentBar from '@/components/SegmentBar';
+import { simulateDisruption } from '@/lib/api';
 
-const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
-const fadeUp = {
+const stagger: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
 };
 
 const severityReasons = [
@@ -33,18 +34,35 @@ const DisruptionsScreen = () => {
     { time: '09:14:22', type: 'trigger', text: 'Metro L1 +18 min — Signal Failure' },
     { time: '09:14:22', type: 'reroute', text: 'Reroute: Bus #340 suggested (+9 min)' },
   ]);
+  const [apiLoading, setApiLoading] = useState(false);
 
-  const triggerDisruption = () => {
+  const triggerDisruption = async () => {
     const now = new Date().toLocaleTimeString('en-US', { hour12: false });
     const reasonLabels = activeReasons
       .map((id) => severityReasons.find((r) => r.id === id)?.label)
       .filter(Boolean)
       .join(', ');
+    // Optimistic UI update
     setLogs((prev) => [
       { time: now, type: 'trigger', text: `${selectedRoute} +${delayMin} min — ${reasonLabels}` },
-      { time: now, type: 'reroute', text: 'Reroute calculated' },
       ...prev,
     ]);
+    // Call backend
+    setApiLoading(true);
+    try {
+      const data = await simulateDisruption(delayMin);
+      setLogs((prev) => [
+        { time: now, type: 'reroute', text: data.alert + ` (${data.routes.length} routes updated)` },
+        ...prev,
+      ]);
+    } catch {
+      setLogs((prev) => [
+        { time: now, type: 'reroute', text: 'Backend unavailable — reroute simulated locally' },
+        ...prev,
+      ]);
+    } finally {
+      setApiLoading(false);
+    }
   };
 
   const clearAll = () => {
@@ -451,10 +469,14 @@ const DisruptionsScreen = () => {
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={triggerDisruption}
-                className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
+                disabled={apiLoading}
+                className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-60"
               >
-                <Play size={16} strokeWidth={2.5} />
-                Trigger Disruption
+                {apiLoading ? (
+                  <><Loader2 size={16} className="animate-spin" /> Simulating…</>
+                ) : (
+                  <><Play size={16} strokeWidth={2.5} /> Trigger Disruption</>
+                )}
               </motion.button>
 
               <div className="flex gap-2">

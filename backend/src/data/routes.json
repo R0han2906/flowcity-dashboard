@@ -1,0 +1,139 @@
+[
+  {
+    "id": 1,
+    "type": "fastest",
+    "from": "Andheri",
+    "to": "Bandra",
+    "steps": [
+      {
+        "mode": "metro",
+        "line": "Line 1",
+        "from": "Andheri",
+        "to": "Ghatkopar",
+        "time": 18,
+        "cost": 30,
+        "crowd": 6
+      },
+      {
+        "mode": "train",
+        "line": "Western Line",
+        "from": "Ghatkopar",
+        "to": "Bandra",
+        "time": 10,
+        "cost": 10,
+        "crowd": 8
+      },
+      {
+        "mode": "walk",
+        "distance": "0.5 km",
+        "time": 5,
+        "cost": 0
+      }
+    ],
+    "delayFactor": 2,
+    "reliability": 85
+  },
+  {
+    "id": 2,
+    "type": "cheapest",
+    "from": "Andheri",
+    "to": "Bandra",
+    "steps": [
+      {
+        "mode": "bus",
+        "route": "BEST 310",
+        "from": "Andheri East",
+        "to": "Bandra Station",
+        "time": 40,
+        "cost": 15,
+        "crowd": 7
+      },
+      {
+        "mode": "walk",
+        "distance": "0.8 km",
+        "time": 10,
+        "cost": 0
+      }
+    ],
+    "delayFactor": 3,
+    "reliability": 70
+  },
+  {
+    "id": 3,
+    "type": "comfort",
+    "from": "Andheri",
+    "to": "Bandra",
+    "steps": [
+      {
+        "mode": "auto",
+        "from": "Andheri",
+        "to": "Bandra",
+        "time": 25,
+        "cost": 150,
+        "comfort": 9
+      }
+    ],
+    "delayFactor": 1,
+    "reliability": 90
+  },
+  {
+    "id": 4,
+    "type": "balanced",
+    "from": "Andheri",
+    "to": "Dadar",
+    "steps": [
+      {
+        "mode": "metro",
+        "line": "Line 1",
+        "from": "Andheri",
+        "to": "Ghatkopar",
+        "time": 20,
+        "cost": 30,
+        "crowd": 5
+      },
+      {
+        "mode": "train",
+        "line": "Central Line",
+        "from": "Ghatkopar",
+        "to": "Dadar",
+        "time": 15,
+        "cost": 10,
+        "crowd": 8
+      },
+      {
+        "mode": "auto",
+        "distance": "1.2 km",
+        "time": 8,
+        "cost": 40
+      }
+    ],
+    "delayFactor": 2,
+    "reliability": 80
+  },
+  {
+    "id": 5,
+    "type": "fastest",
+    "from": "Borivali",
+    "to": "BKC",
+    "steps": [
+      {
+        "mode": "train",
+        "line": "Western Line",
+        "from": "Borivali",
+        "to": "Bandra",
+        "time": 22,
+        "cost": 15,
+        "crowd": 9
+      },
+      {
+        "mode": "auto",
+        "from": "Bandra",
+        "to": "BKC",
+        "time": 12,
+        "cost": 60
+      }
+    ],
+    "delayFactor": 3,
+    "reliability": 75
+  }
+]
